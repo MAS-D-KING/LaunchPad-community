@@ -1,0 +1,7 @@
+{
+  "name": "LaunchPad Community",
+  "description": "A minimalist, low-data opportunity discovery platform for African youth connecting students to scholarships, internships, and grants.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
