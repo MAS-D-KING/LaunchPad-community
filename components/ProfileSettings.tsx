@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile, MentorService } from '../types';
-import { Settings, Award, Bookmark, Star, Edit, Shield, LogOut, CheckCircle, Briefcase, BookOpen, Clock, Linkedin, Camera } from 'lucide-react';
+import { Settings, Award, Bookmark, Star, Edit, Shield, LogOut, CheckCircle, Briefcase, BookOpen, Clock, Linkedin, Camera, User } from 'lucide-react';
 
 interface Props {
   user: UserProfile;
@@ -44,7 +44,13 @@ const ProfileSettings: React.FC<Props> = ({ user, onUpdateProfile }) => {
             <div className="flex-1 text-center md:text-left">
                 <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">{user.name}</h2>
                 <p className="text-coral-500 font-bold mb-2">{user.username || '@username'}</p>
-                <p className="text-gray-500 text-sm font-medium flex items-center justify-center md:justify-start gap-1"><Briefcase size={14}/> {user.education} • {user.city}</p>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-500 font-medium">
+                    <span className="flex items-center gap-1"><Briefcase size={14}/> {user.education}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                    <span>{user.city}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                    <span className="flex items-center gap-1"><User size={14}/> Age: {user.age} • {user.gender || 'N/A'}</span>
+                </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 mt-3 max-w-md italic bg-beige-50 dark:bg-charcoal-900/50 p-3 rounded-lg border border-beige-100 dark:border-charcoal-700 mx-auto md:mx-0">{user.bio || 'No bio yet.'}</p>
             </div>
             <div className="flex gap-2 self-start mt-4 md:mt-0">

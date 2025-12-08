@@ -133,9 +133,14 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
         org: o.organization
       }));
       
-      const langContext = language === 'fr' 
-        ? "Speak exclusively in French (Français). Adopt a warm, helpful tone suitable for Francophone Cameroonian youth."
-        : "Speak in English. Adopt a warm, helpful tone suitable for Anglophone Cameroonian youth.";
+      let langContext = "Speak in English. Adopt a warm, helpful tone suitable for Anglophone Cameroonian youth.";
+      switch(language) {
+          case 'fr': langContext = "Speak exclusively in French (Français). Adopt a warm, helpful tone suitable for Francophone Cameroonian youth."; break;
+          case 'pidgin': langContext = "Speak in Cameroonian Pidgin English. Be informal, friendly, and act like a local 'Big Bro/Sis' guiding the user."; break;
+          case 'de': langContext = "Speak exclusively in German (Deutsch). Be professional and supportive."; break;
+          case 'zh': langContext = "Speak exclusively in Mandarin Chinese. Be helpful and encouraging."; break;
+          case 'es': langContext = "Speak exclusively in Spanish (Español). Be warm and energetic."; break;
+      }
 
       const systemInstruction = `
         You are "LaunchPad Assistant", a knowledgeable and supportive career guide specifically for Cameroonian youth and students.

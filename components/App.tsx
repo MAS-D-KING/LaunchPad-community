@@ -57,7 +57,7 @@ const App: React.FC = () => {
     }
   }, [darkMode]);
 
-  const t = TRANSLATIONS[language]; // Translation Helper
+  const t = TRANSLATIONS[language] || TRANSLATIONS['en']; // Translation Helper
 
   const toggleBookmark = (id: string) => {
     setOpportunities(prev => prev.map(op => 
@@ -338,12 +338,21 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2 md:gap-4 ml-4">
-            <button 
-              onClick={() => setLanguage(l => l === 'en' ? 'fr' : 'en')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-charcoal-700 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors"
-            >
-               <Languages size={14} /> <span className="hidden sm:inline">{language.toUpperCase()}</span>
-            </button>
+            <div className="relative flex items-center">
+                <Languages size={14} className="absolute left-3 text-gray-500 pointer-events-none"/>
+                <select 
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
+                  className="pl-8 pr-3 py-1.5 bg-gray-100 dark:bg-charcoal-700 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors outline-none cursor-pointer appearance-none"
+                >
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                    <option value="pidgin">Pidgin</option>
+                    <option value="de">Deutsch</option>
+                    <option value="zh">中文</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
 
             <button 
               onClick={() => setAiMode(!aiMode)}
@@ -418,8 +427,8 @@ const App: React.FC = () => {
                             {index === 1 && (
                                 <div className="bg-gradient-to-r from-charcoal-900 to-charcoal-800 rounded-xl p-6 mb-6 text-white shadow-lg border border-charcoal-700">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-bold flex items-center gap-2 text-golden-400"><Sparkles size={18} fill="currentColor"/> Verified Mentors</h3>
-                                        <button onClick={() => setCurrentView('mentorship')} className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full hover:bg-white/20 transition-colors">View All</button>
+                                        <h3 className="font-bold flex items-center gap-2 text-golden-400"><Sparkles size={18} fill="currentColor"/> {t.verifiedMentors}</h3>
+                                        <button onClick={() => setCurrentView('mentorship')} className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full hover:bg-white/20 transition-colors">{t.viewAll}</button>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {mentors.slice(0, 3).map(m => (
@@ -441,8 +450,8 @@ const App: React.FC = () => {
                  </>
                ) : (
                  <div className="text-center py-20">
-                   <p className="text-gray-500 font-medium text-lg">No opportunities found.</p>
-                   {user.city && <p className="text-sm text-gray-400 mt-2">Try adjusting your filters or search for '{user.city}'.</p>}
+                   <p className="text-gray-500 font-medium text-lg">{t.noOpportunities}</p>
+                   {user.city && <p className="text-sm text-gray-400 mt-2">{t.tryAdjusting} '{user.city}'.</p>}
                  </div>
                )}
             </div>

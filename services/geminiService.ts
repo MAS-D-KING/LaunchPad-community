@@ -50,9 +50,15 @@ export const generateSmartOpportunities = async (
       return [];
     }
 
-    const langInstruction = language === 'fr' 
-      ? "IMPORTANT: Generate all content (title, description, eligibility, etc.) in FRENCH." 
-      : "Generate content in English.";
+    let langInstruction = "Generate content in English.";
+    switch(language) {
+        case 'fr': langInstruction = "IMPORTANT: Generate all content in FRENCH (Français)."; break;
+        case 'pidgin': langInstruction = "IMPORTANT: Generate content in CAMEROONIAN PIDGIN ENGLISH (CPE). Make it sound local and authentic."; break;
+        case 'de': langInstruction = "IMPORTANT: Generate all content in GERMAN (Deutsch)."; break;
+        case 'zh': langInstruction = "IMPORTANT: Generate all content in SIMPLIFIED CHINESE."; break;
+        case 'es': langInstruction = "IMPORTANT: Generate all content in SPANISH (Español)."; break;
+        default: langInstruction = "Generate content in English.";
+    }
 
     const prompt = `
       Act as the LaunchPad Community engine. 

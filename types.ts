@@ -16,7 +16,7 @@ export type RegionScope = 'Global' | 'Africa' | 'Cameroon' | 'Specific City';
 
 export type MentorService = 'CV Review' | 'Portfolio Review' | 'Interview Prep' | 'Career Advice' | 'Academic Guidance' | 'Project Mentorship' | 'Scholarship Guidance' | 'Personal Statement Review';
 
-export type Language = 'en' | 'fr';
+export type Language = 'en' | 'fr' | 'pidgin' | 'de' | 'zh' | 'es';
 
 export interface Opportunity {
   id: string;
@@ -79,6 +79,7 @@ export interface UserProfile {
   city: string; // Critical for on-site filtering
   country: string;
   age: number;
+  gender?: 'Male' | 'Female' | 'Prefer not to say'; // New field
   bio?: string;
   username?: string;
   image?: string;
