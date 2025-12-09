@@ -177,7 +177,8 @@ const App: React.FC = () => {
 
   // --- STRICT FILTERING ENGINE ---
   const displayedOpportunities = opportunities.filter(op => {
-      if (op.status !== 'approved') return false;
+      // 1. Status Filter: Admins can see pending posts in the feed to verify them
+      if (op.status !== 'approved' && user?.role !== 'Admin') return false;
       
       if (user && user.role === 'User') {
          const userEdu = user.education;
@@ -185,7 +186,7 @@ const App: React.FC = () => {
          const opCats = op.category;
          const userCats = user.targetCategories || [];
 
-         // 1. ELIGIBILITY LOCK: Strict Education Level Blocking
+         // 2. ELIGIBILITY LOCK: Strict Education Level Blocking
          if (userEdu === 'High School') {
              // High schoolers CANNOT see Grad/PhD/Undergrad-only
              if (opLevels.includes('Graduate') || opLevels.includes('PhD') || opLevels.includes('Undergraduate')) {
@@ -198,7 +199,7 @@ const App: React.FC = () => {
              if (opLevels.includes('Graduate') && !opLevels.includes('Undergraduate')) return false;
          }
 
-         // 2. CATEGORY LOCK: If no search query, STRICTLY show preferred categories
+         // 3. CATEGORY LOCK: If no search query, STRICTLY show preferred categories
          if (filters.category === 'All' && !filters.searchQuery && userCats.length > 0) {
              if (!userCats.includes(opCats)) return false;
          }

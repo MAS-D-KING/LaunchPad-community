@@ -10,13 +10,22 @@ interface Props {
 const LaunchPadLabs: React.FC<Props> = ({ user }) => {
   const [activeLab, setActiveLab] = useState<LabsType>('Code');
   
-  // Filtering logic based on user interests
+  // Filtering logic based on user interests or role
   const availableLabs: LabsType[] = ['Code', 'Writer']; // Everyone gets Code and Writer
   if (user) {
-      if (user.interests.some(i => ['Design', 'Arts', 'Art'].includes(i))) availableLabs.push('Design');
-      if (user.interests.some(i => ['Art', 'Arts'].includes(i))) availableLabs.push('Artist');
-      if (user.interests.some(i => ['Engineering', 'Robotics', 'Technology', 'Science'].includes(i))) availableLabs.push('Eng');
-      if (user.interests.some(i => ['Music', 'Audio'].includes(i))) availableLabs.push('Audio');
+      if (user.role === 'Admin') {
+          // Admins get ALL workstations for management/review
+          if (!availableLabs.includes('Design')) availableLabs.push('Design');
+          if (!availableLabs.includes('Artist')) availableLabs.push('Artist');
+          if (!availableLabs.includes('Eng')) availableLabs.push('Eng');
+          if (!availableLabs.includes('Audio')) availableLabs.push('Audio');
+      } else {
+          // Standard User interest logic
+          if (user.interests.some(i => ['Design', 'Arts', 'Art'].includes(i))) availableLabs.push('Design');
+          if (user.interests.some(i => ['Art', 'Arts'].includes(i))) availableLabs.push('Artist');
+          if (user.interests.some(i => ['Engineering', 'Robotics', 'Technology', 'Science'].includes(i))) availableLabs.push('Eng');
+          if (user.interests.some(i => ['Music', 'Audio'].includes(i))) availableLabs.push('Audio');
+      }
   }
 
   // Workstation State
