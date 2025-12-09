@@ -176,8 +176,9 @@ const VoiceAssistant: React.FC<Props> = ({
       outputAudioContextRef.current = outputCtx;
       nextStartTimeRef.current = 0;
 
+      // Pass ONLY the relevant opportunities that the user can actually see
       const opsSummary = opportunities.slice(0, 10).map(o => ({
-        id: o.id, title: o.title, deadline: o.deadline, category: o.category, location: o.location
+        id: o.id, title: o.title, deadline: o.deadline, category: o.category, location: o.location, eligibility: o.eligibility
       }));
 
       const appsSummary = mentorApps.filter(a => a.status === 'pending').map(a => ({
@@ -194,16 +195,17 @@ const VoiceAssistant: React.FC<Props> = ({
       const systemInstruction = `
         You are "LaunchPad Assistant".
         Role: ${user.role}.
-        User: ${user.name} in ${user.city}.
-        Language: ${langContext}
+        User: ${user.name}, Education: ${user.education}, City: ${user.city}.
+        Language Context: ${langContext}
         
-        Capabilities:
-        1. Find opportunities from this list: ${JSON.stringify(opsSummary)}.
-        2. Toggle Dark Mode (use 'changeTheme').
-        3. If Admin, you can post opportunities (use 'postQuickOpportunity').
-        4. If Admin, you can review mentor applications: ${JSON.stringify(appsSummary)}. Use 'approveMentorApp' if asked.
+        Behavior:
+        1. Speak QUICKLY, efficiently, and concisely. Do not drone on.
+        2. Be highly sensitive to the user's background. If they are a High School student, do not recommend PhD grants.
+        3. Filter these opportunities smartly: ${JSON.stringify(opsSummary)}.
+        4. If Admin, you can post opportunities (use 'postQuickOpportunity').
+        5. If Admin, you can review mentor applications: ${JSON.stringify(appsSummary)}. Use 'approveMentorApp' if asked.
         
-        Be helpful, concise, and friendly.
+        Tone: Fast, Motivational, Helpful.
       `;
 
       const sessionPromise = ai.live.connect({

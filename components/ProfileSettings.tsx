@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UserProfile, MentorService } from '../types';
-import { Settings, Award, Bookmark, Star, Edit, Shield, LogOut, CheckCircle, Briefcase, BookOpen, Clock, Linkedin, Camera, User } from 'lucide-react';
+import { Settings, Award, Bookmark, Star, Edit, Shield, LogOut, CheckCircle, Briefcase, BookOpen, Clock, Linkedin, Camera, User, Plus, Save } from 'lucide-react';
 
 interface Props {
   user: UserProfile;
@@ -11,6 +11,15 @@ interface Props {
 const ProfileSettings: React.FC<Props> = ({ user, onUpdateProfile }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Edit States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user.name);
+  const [editBio, setEditBio] = useState(user.bio || '');
+
+  // Achievement Modal
+  const [showAchieveModal, setShowAchieveModal] = useState(false);
+  const [newAchieveTitle, setNewAchieveTitle] = useState('');
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -20,6 +29,22 @@ const ProfileSettings: React.FC<Props> = ({ user, onUpdateProfile }) => {
               onUpdateProfile({ image: reader.result as string });
           };
           reader.readAsDataURL(file);
+      }
+  };
+
+  const saveProfile = () => {
+      if (onUpdateProfile) {
+          onUpdateProfile({ name: editName, bio: editBio });
+          setIsEditing(false);
+      }
+  };
+
+  const addAchievement = () => {
+      if (newAchieveTitle && onUpdateProfile) {
+          const newAchieves = [...(user.achievements || []), newAchieveTitle];
+          onUpdateProfile({ achievements: newAchieves });
+          setNewAchieveTitle('');
+          setShowAchieveModal(false);
       }
   };
 
@@ -41,20 +66,33 @@ const ProfileSettings: React.FC<Props> = ({ user, onUpdateProfile }) => {
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
             </div>
 
-            <div className="flex-1 text-center md:text-left">
-                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">{user.name}</h2>
-                <p className="text-coral-500 font-bold mb-2">{user.username || '@username'}</p>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-500 font-medium">
-                    <span className="flex items-center gap-1"><Briefcase size={14}/> {user.education}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>{user.city}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span className="flex items-center gap-1"><User size={14}/> Age: {user.age} • {user.gender || 'N/A'}</span>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 mt-3 max-w-md italic bg-beige-50 dark:bg-charcoal-900/50 p-3 rounded-lg border border-beige-100 dark:border-charcoal-700 mx-auto md:mx-0">{user.bio || 'No bio yet.'}</p>
+            <div className="flex-1 text-center md:text-left w-full">
+                {isEditing ? (
+                    <div className="space-y-3">
+                        <input value={editName} onChange={e => setEditName(e.target.value)} className="text-3xl font-extrabold text-gray-900 dark:text-white bg-transparent border-b border-golden-500 w-full outline-none" placeholder="Your Name"/>
+                        <textarea value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full p-2 bg-gray-50 dark:bg-charcoal-900 rounded border border-gray-200 dark:border-charcoal-600 text-sm" rows={3} placeholder="Your Bio..."/>
+                    </div>
+                ) : (
+                    <>
+                        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">{user.name}</h2>
+                        <p className="text-coral-500 font-bold mb-2">{user.username || '@username'}</p>
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-500 font-medium">
+                            <span className="flex items-center gap-1"><Briefcase size={14}/> {user.education}</span>
+                            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <span>{user.city}</span>
+                            <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                            <span className="flex items-center gap-1"><User size={14}/> Age: {user.age} • {user.gender || 'N/A'}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-3 max-w-md italic bg-beige-50 dark:bg-charcoal-900/50 p-3 rounded-lg border border-beige-100 dark:border-charcoal-700 mx-auto md:mx-0">{user.bio || 'No bio yet.'}</p>
+                    </>
+                )}
             </div>
             <div className="flex gap-2 self-start mt-4 md:mt-0">
-                 <button className="px-4 py-2 text-sm font-bold bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Edit size={14}/> Edit</button>
+                 {isEditing ? (
+                     <button onClick={saveProfile} className="px-4 py-2 text-sm font-bold bg-golden-500 text-white rounded-lg hover:bg-golden-600 flex items-center gap-2"><Save size={14}/> Save</button>
+                 ) : (
+                     <button onClick={() => setIsEditing(true)} className="px-4 py-2 text-sm font-bold bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"><Edit size={14}/> Edit</button>
+                 )}
             </div>
         </div>
 
@@ -109,16 +147,40 @@ const ProfileSettings: React.FC<Props> = ({ user, onUpdateProfile }) => {
                  <div className="p-4 bg-gray-50 dark:bg-charcoal-900 rounded-xl col-span-2 md:col-span-2 text-left flex items-center gap-4 border border-gray-100 dark:border-charcoal-600">
                      <div className="flex-1">
                          <h4 className="font-bold text-sm mb-2 text-gray-800 dark:text-gray-200">Achievements</h4>
-                         <div className="flex gap-2">
+                         <div className="flex flex-wrap gap-2">
                              {user.achievements?.map(a => (
-                                 <div key={a} className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-xl shadow-sm" title={a}>🏆</div>
+                                 <div key={a} className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-xl shadow-sm cursor-help" title={a}>🏆</div>
                              ))}
-                             <span className="w-10 h-10 rounded-full bg-gray-200 dark:bg-charcoal-700 flex items-center justify-center text-xs text-gray-500 font-bold border-2 border-dashed border-gray-400">+</span>
+                             <button onClick={() => setShowAchieveModal(true)} className="w-10 h-10 rounded-full bg-gray-200 dark:bg-charcoal-700 flex items-center justify-center text-xs text-gray-500 font-bold border-2 border-dashed border-gray-400 hover:border-golden-500 hover:text-golden-500 transition-colors">+</button>
                          </div>
                      </div>
                  </div>
             </div>
         </div>
+
+        {/* Add Achievement Modal */}
+        {showAchieveModal && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-charcoal-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
+                    <h3 className="font-bold text-lg mb-4 dark:text-white">Add Achievement</h3>
+                    <input 
+                        className="w-full p-2 border rounded mb-2 dark:bg-charcoal-900 dark:text-white" 
+                        placeholder="Title (e.g. Hackathon Winner)"
+                        value={newAchieveTitle}
+                        onChange={e => setNewAchieveTitle(e.target.value)}
+                    />
+                    <textarea 
+                        className="w-full p-2 border rounded mb-4 dark:bg-charcoal-900 dark:text-white" 
+                        placeholder="Description / Proof Link (Optional)" 
+                        rows={2}
+                    />
+                    <div className="flex gap-2">
+                        <button onClick={() => setShowAchieveModal(false)} className="flex-1 py-2 bg-gray-200 rounded font-bold text-sm">Cancel</button>
+                        <button onClick={addAchievement} className="flex-1 py-2 bg-golden-500 text-white rounded font-bold text-sm">Add</button>
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 

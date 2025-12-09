@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Opportunity } from '../types';
-import { MapPin, Calendar, Bookmark, Share2, Clock, ArrowRight, ChevronDown, ChevronUp, Globe, Edit2, Trash2, Tag, Play } from 'lucide-react';
+import { MapPin, Calendar, Bookmark, Share2, Clock, ArrowRight, ChevronDown, ChevronUp, Globe, Edit2, Trash2, Tag, Play, Wand2 } from 'lucide-react';
 
 interface Props {
   data: Opportunity;
@@ -9,11 +9,13 @@ interface Props {
   isAdmin?: boolean;
   onEdit?: (op: Opportunity) => void;
   onDelete?: (id: string) => void;
+  onHelpApply?: (op: Opportunity) => void;
 }
 
-const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, onDelete }) => {
+const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, onDelete, onHelpApply }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   const isDeadLineSoon = () => {
     if (!data.deadline || data.deadline === 'TBD') return false;
@@ -29,7 +31,7 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
       const video = e.currentTarget.querySelector('video');
       if (video) {
           if (video.paused) {
-              video.play();
+              video.play().catch(e => console.error("Playback failed", e));
               setIsPlaying(true);
           } else {
               video.pause();
@@ -37,6 +39,11 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
           }
       }
   };
+
+  // Determine if we have valid media to show
+  const hasVideo = data.mediaType === 'video' && !!data.mediaUrl && !mediaError;
+  const hasImage = (!!data.image || (data.mediaType === 'image' && !!data.mediaUrl)) && !mediaError;
+  const displayImage = data.mediaType === 'image' ? data.mediaUrl : data.image;
 
   return (
     <div className="bg-white dark:bg-charcoal-800 border-l-[6px] border-golden-500 shadow-sm rounded-r-xl p-4 md:p-5 mb-5 hover:shadow-md transition-all duration-200 group relative">
@@ -54,7 +61,7 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
           
           <div className="flex items-start gap-3">
             {data.logo && (
-              <img src={data.logo} alt={data.organization} className="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100 shrink-0" />
+              <img src={data.logo} alt={data.organization} className="w-10 h-10 rounded-lg object-contain bg-white border border-gray-100 shrink-0" loading="lazy" />
             )}
             <div className="min-w-0">
                <h3 className="text-lg sm:text-xl font-extrabold text-charcoal-900 dark:text-white leading-tight mb-1 break-words">
@@ -103,17 +110,20 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
         {data.description}
       </p>
 
-      {/* Media Content (Facebook Style) */}
-      {(data.mediaUrl || data.image) && (
+      {/* Media Content - Optimized for Low Data (No AutoPlay, Lazy Load) */}
+      {(hasVideo || hasImage) && (
           <div className="mb-4 rounded-lg overflow-hidden border border-gray-100 dark:border-charcoal-700 bg-black">
-              {data.mediaType === 'video' ? (
+              {hasVideo && data.mediaUrl ? (
                   <div className="relative cursor-pointer aspect-video" onClick={handleVideoPlay}>
                       <video 
+                        key={data.mediaUrl}
                         src={data.mediaUrl} 
                         className="w-full h-full object-cover" 
-                        loop 
-                        muted={!isPlaying}
+                        // Removed autoPlay to save data
                         playsInline
+                        crossOrigin="anonymous"
+                        onError={() => setMediaError(true)}
+                        preload="metadata" // Only load metadata initially
                       />
                       {!isPlaying && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors">
@@ -123,9 +133,15 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
                           </div>
                       )}
                   </div>
-              ) : (
-                  <img src={data.mediaUrl || data.image} alt="Opportunity" className="w-full h-auto max-h-[400px] object-cover" />
-              )}
+              ) : hasImage && displayImage ? (
+                  <img 
+                    src={displayImage} 
+                    alt="Opportunity" 
+                    className="w-full h-auto max-h-[400px] object-cover" 
+                    onError={() => setMediaError(true)}
+                    loading="lazy" // Native lazy loading
+                  />
+              ) : null}
           </div>
       )}
 
@@ -184,6 +200,14 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
         </div>
         
         <div className="flex gap-3 w-full sm:w-auto">
+            {onHelpApply && (
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onHelpApply(data); }}
+                    className="flex items-center justify-center gap-1 hover:text-golden-600 dark:hover:text-golden-400 font-bold px-2 py-1 text-golden-500"
+                >
+                    <Wand2 size={16} /> AI Help
+                </button>
+            )}
             <button className="flex items-center justify-center sm:justify-start gap-1 hover:text-gray-800 dark:hover:text-gray-200 font-medium px-2 py-1">
                 <Share2 size={16} />
             </button>

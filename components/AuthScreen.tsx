@@ -1,17 +1,19 @@
 
 import React, { useState } from 'react';
 import { UserProfile, UserRole, Category } from '../types';
-import { ADMIN_CREDENTIALS, MENTOR_CREDENTIALS } from '../constants';
-import { LogIn, UserPlus, Chrome, Mail, ArrowLeft, CheckCircle, Lock } from 'lucide-react';
+import { ADMIN_CREDENTIALS, MENTOR_CREDENTIALS, APP_LOGO, APP_WALLPAPER } from '../constants';
+import { LogIn, UserPlus, Chrome, Mail, ArrowLeft, CheckCircle, Lock, Sparkles, Target, ArrowRight } from 'lucide-react';
 
 interface Props {
   onLogin: (user: UserProfile) => void;
 }
 
+type AuthStep = 'form' | 'verify' | 'onboarding-interests' | 'onboarding-categories' | 'onboarding-goals';
+
 const AuthScreen: React.FC<Props> = ({ onLogin }) => {
   // Auth State
   const [isLogin, setIsLogin] = useState(true);
-  const [authStep, setAuthStep] = useState<'form' | 'verify'>('form');
+  const [authStep, setAuthStep] = useState<AuthStep>('form');
   
   // Form State
   const [role, setRole] = useState<UserRole>('User');
@@ -24,9 +26,11 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
   const [gender, setGender] = useState<'Male'|'Female'|'Prefer not to say'>('Male');
   const [education, setEducation] = useState('High School');
   const [academicBackground, setAcademicBackground] = useState('');
+  
+  // Onboarding State
   const [interests, setInterests] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
-  const [specificNeeds, setSpecificNeeds] = useState<string[]>([]);
+  const [goals, setGoals] = useState('');
   
   // Verification State
   const [verificationCode, setVerificationCode] = useState('');
@@ -42,6 +46,11 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
     'Engineering', 'Education', 'Law', 'Media & Journalism', 'Environment', 'Finance',
     'Sports', 'Research', 'Public Policy', 'Design', 'Data Science', 'Marketing'
   ];
+
+  const availableCategories: Category[] = [
+      'Scholarship', 'Internship', 'Hackathon', 'Grant', 'Volunteering', 
+      'Fellowship', 'Competition', 'Job', 'Event'
+  ];
   
   const toggleSelection = <T extends string>(item: T, list: T[], setList: React.Dispatch<React.SetStateAction<T[]>>) => {
     if (list.includes(item)) {
@@ -51,17 +60,34 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
     }
   };
 
+  const saveUserToRegistry = (user: UserProfile) => {
+      const registry = JSON.parse(localStorage.getItem('launchpad_registry') || '[]');
+      // Remove existing entry with same email if any
+      const filtered = registry.filter((u: any) => u.email !== user.email);
+      filtered.push({ email: user.email, password: password, profile: user }); // Storing password securely in real app, here mock
+      localStorage.setItem('launchpad_registry', JSON.stringify(filtered));
+  };
+
   const handleGoogleLogin = () => {
     setIsGoogleLoading(true);
     setError('');
     
     // Simulate Google OAuth delay
     setTimeout(() => {
-        // Prompt user to simulate "Choosing an Account"
         const googleEmail = prompt("Simulating Google Sign In:\nPlease enter your Google email address:", email || "");
         
         if (!googleEmail) {
             setIsGoogleLoading(false);
+            return;
+        }
+
+        // Check if user exists in registry
+        const registry = JSON.parse(localStorage.getItem('launchpad_registry') || '[]');
+        const existing = registry.find((u: any) => u.email === googleEmail);
+
+        if (existing) {
+            setIsGoogleLoading(false);
+            onLogin(existing.profile);
             return;
         }
 
@@ -82,6 +108,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
             gender: 'Prefer not to say',
             language: 'en',
             achievements: ["Verified via Google"],
+            joinedCommunityIds: [],
             opportunitiesApplied: 0,
             opportunitiesSaved: 0,
             settings: {
@@ -93,6 +120,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
             }
         };
         
+        saveUserToRegistry(googleUser);
         setIsGoogleLoading(false);
         onLogin(googleUser);
     }, 1500);
@@ -102,7 +130,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    if (!name || !email || !city || !education || !password) {
+    if (!name || !email || !city || !education || !password || !academicBackground) {
         setError("Please fill in all required fields.");
         return;
     }
@@ -116,14 +144,16 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
         role: 'User',
         education,
         academicBackground,
-        interests,
-        targetCategories: selectedCategories,
-        specificNeeds,
         city,
         country,
         age,
         gender,
         language: inferredLang,
+        // These will be filled in onboarding
+        interests: [],
+        targetCategories: [],
+        specificNeeds: [],
+        joinedCommunityIds: [],
         achievements: ["Profile Completed"],
         settings: {
             notifications: true,
@@ -139,9 +169,19 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
     setSentCode(code);
     setPendingUser(newUser);
     
-    // Simulate Email Sending
+    // Simulate Email Sending with specific template
     console.log(`Email sent to ${email} with code: ${code}`);
-    alert(`LAUNCHPAD SECURITY:\n\nWe have sent a verification code to ${email}.\n\nYour Code: ${code}`);
+    alert(
+`Hello ${name},
+Welcome to LaunchPad! 🎉
+To help you access your account, here is your temporary 6-digit login code:
+🔐 Your Code: [${code}]
+This code is temporary and expires soon.
+For your security, please log in and immediately set a new password in your account settings.
+If you did not request this code, simply ignore this message.
+Thanks for being part of the LaunchPad community! 🚀
+LaunchPad Team`
+    );
     
     setAuthStep('verify');
   };
@@ -149,11 +189,47 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
   const handleVerificationSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (verificationCode === sentCode) {
-          if (pendingUser) {
-              onLogin(pendingUser);
-          }
+          // Verification Success, move to onboarding
+          setAuthStep('onboarding-interests');
       } else {
           setError("Incorrect verification code. Please try again.");
+      }
+  };
+
+  const handleInterestsSubmit = () => {
+      if (interests.length === 0) {
+          setError("Please select at least one interest.");
+          return;
+      }
+      if (pendingUser) {
+          setPendingUser({ ...pendingUser, interests });
+          setError('');
+          setAuthStep('onboarding-categories');
+      }
+  };
+
+  const handleCategoriesSubmit = () => {
+      if (selectedCategories.length === 0) {
+          setError("Please select at least one opportunity type.");
+          return;
+      }
+      if (pendingUser) {
+          setPendingUser({ ...pendingUser, targetCategories: selectedCategories });
+          setError('');
+          setAuthStep('onboarding-goals');
+      }
+  };
+
+  const handleGoalsSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!goals.trim()) {
+          setError("Please share a brief goal.");
+          return;
+      }
+      if (pendingUser) {
+          const finalUser = { ...pendingUser, goals };
+          saveUserToRegistry(finalUser);
+          onLogin(finalUser);
       }
   };
 
@@ -161,6 +237,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
+    // 1. Check Admin
     if (role === 'Admin') {
       const admin = ADMIN_CREDENTIALS.find(a => a.email === email && a.pass === password);
       if (admin) {
@@ -171,10 +248,12 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
             adminRole: 'Super Admin', 
             permissions: ['manage_users', 'manage_content'] 
         });
-      } else {
-        setError('Invalid Admin Credentials.');
+        return;
       }
-    } else if (role === 'Mentor') {
+    } 
+    
+    // 2. Check Mentor
+    if (role === 'Mentor') {
         const mentor = MENTOR_CREDENTIALS.find(m => m.email === email && m.pass === password);
         if (mentor) {
              onLogin({ 
@@ -185,6 +264,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
                  availability: 'Weekly', 
                  profession: 'Industry Expert' 
             });
+            return;
         } else if (email === 'mentor@example.com') { 
              onLogin({ 
                  ...baseUser('Mentor User'), 
@@ -193,19 +273,27 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
                  services: ['Career Advice'], 
                  availability: 'Weekly' 
             });
-        } else {
-             setError('Invalid Mentor Credentials.');
+            return;
         }
-    } else {
-      // Standard User Login
-      if (email && password) {
-          // In a real app, we would check DB. Here we simulate success for demo.
-          onLogin({ 
-              ...baseUser(name || 'Returning User'), 
-              role: 'User', 
-              id: 'user-1' 
-          });
-      }
+    } 
+    
+    // 3. Check User Registry (Standard Users)
+    if (email && password) {
+        const registry = JSON.parse(localStorage.getItem('launchpad_registry') || '[]');
+        const registeredUser = registry.find((u: any) => u.email === email && u.password === password);
+
+        if (registeredUser) {
+            onLogin(registeredUser.profile);
+        } else if (email === 'test@example.com' && password === 'password') {
+             // Fallback for demo without sign up
+             onLogin({ 
+                ...baseUser('Demo User'), 
+                role: 'User', 
+                id: 'user-demo' 
+            });
+        } else {
+            setError('Invalid Credentials. Please sign up if you have no account.');
+        }
     }
   };
 
@@ -221,6 +309,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
       language: 'en',
       age: 22,
       gender: 'Male',
+      joinedCommunityIds: [],
       settings: {
           notifications: true,
           push: true,
@@ -230,11 +319,12 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
       }
   });
 
-  // Render Verification Screen
+  // --- VIEW: Verification Screen ---
   if (authStep === 'verify') {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4">
-            <div className="bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 dark:border-charcoal-700">
+        <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 relative overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `url("${APP_WALLPAPER}")`, backgroundSize: 'cover' }}></div>
+            <div className="relative z-10 bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 dark:border-charcoal-700">
                 <button onClick={() => setAuthStep('form')} className="flex items-center text-gray-500 hover:text-charcoal-900 dark:hover:text-white mb-6 transition-colors">
                     <ArrowLeft size={16} className="mr-2"/> Back
                 </button>
@@ -266,7 +356,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
                     {error && <p className="text-sm text-red-500 text-center font-bold">{error}</p>}
 
                     <button type="submit" className="w-full bg-golden-500 text-white font-bold py-3.5 rounded-lg hover:bg-golden-600 transition-colors shadow-lg shadow-golden-500/20">
-                        Verify & Enter Dashboard
+                        Verify
                     </button>
                     
                     <p className="text-xs text-center text-gray-400">
@@ -278,11 +368,115 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
       );
   }
 
-  // Render Login/Signup Form
+  // --- VIEW: Onboarding (Interests) ---
+  if (authStep === 'onboarding-interests') {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 relative overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `url("${APP_WALLPAPER}")`, backgroundSize: 'cover' }}></div>
+            <div className="relative z-10 bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-100 dark:border-charcoal-700 animate-fadeIn">
+                <div className="text-center mb-8">
+                     <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white mb-2">What are you interested in?</h2>
+                     <p className="text-gray-500">Select topics to personalize your feed.</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 justify-center mb-8 max-h-96 overflow-y-auto p-2">
+                    {availableInterests.map(i => (
+                        <button 
+                            key={i} 
+                            onClick={() => toggleSelection(i, interests, setInterests)} 
+                            className={`px-4 py-2 text-sm font-bold rounded-full border-2 transition-all ${interests.includes(i) ? 'bg-golden-500 border-golden-500 text-white shadow-md transform scale-105' : 'border-gray-200 dark:border-charcoal-600 text-gray-600 dark:text-gray-300 hover:border-golden-300'}`}
+                        >
+                            {i}
+                        </button>
+                    ))}
+                </div>
+
+                {error && <p className="text-sm text-red-500 text-center font-bold mb-4">{error}</p>}
+
+                <button onClick={handleInterestsSubmit} className="w-full bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 font-bold py-3.5 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                    Next Step <ArrowRight size={18}/>
+                </button>
+            </div>
+          </div>
+      );
+  }
+
+  // --- VIEW: Onboarding (Categories) ---
+  if (authStep === 'onboarding-categories') {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 relative overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `url("${APP_WALLPAPER}")`, backgroundSize: 'cover' }}></div>
+            <div className="relative z-10 bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-gray-100 dark:border-charcoal-700 animate-fadeIn">
+                <div className="text-center mb-8">
+                     <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white mb-2">What are you looking for?</h2>
+                     <p className="text-gray-500">We'll show you these opportunities first.</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-3 justify-center mb-8">
+                    {availableCategories.map(c => (
+                        <button 
+                            key={c} 
+                            onClick={() => toggleSelection(c, selectedCategories, setSelectedCategories)} 
+                            className={`px-4 py-2 text-sm font-bold rounded-lg border-2 transition-all ${selectedCategories.includes(c) ? 'bg-coral-500 border-coral-500 text-white shadow-md transform scale-105' : 'border-gray-200 dark:border-charcoal-600 text-gray-600 dark:text-gray-300 hover:border-coral-300'}`}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
+
+                {error && <p className="text-sm text-red-500 text-center font-bold mb-4">{error}</p>}
+
+                <button onClick={handleCategoriesSubmit} className="w-full bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 font-bold py-3.5 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                    Next Step <ArrowRight size={18}/>
+                </button>
+            </div>
+          </div>
+      );
+  }
+
+  // --- VIEW: Onboarding (Goals) ---
+  if (authStep === 'onboarding-goals') {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 relative overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: `url("${APP_WALLPAPER}")`, backgroundSize: 'cover' }}></div>
+            <div className="relative z-10 bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 dark:border-charcoal-700 animate-fadeIn">
+                <div className="text-center mb-6">
+                     <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center mx-auto mb-4 text-violet-600">
+                        <Target size={32} />
+                    </div>
+                     <h2 className="text-2xl font-bold text-charcoal-900 dark:text-white mb-2">One Last Thing...</h2>
+                     <p className="text-gray-500">What is your main goal right now?</p>
+                </div>
+                
+                <form onSubmit={handleGoalsSubmit}>
+                    <textarea 
+                        className="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-charcoal-600 bg-transparent dark:text-white focus:border-violet-500 focus:ring-0 outline-none resize-none mb-6 text-center text-lg"
+                        placeholder="e.g., Get a full scholarship to MIT, Find a remote internship, Build a startup..."
+                        rows={3}
+                        value={goals}
+                        onChange={(e) => setGoals(e.target.value)}
+                        autoFocus
+                    />
+
+                    {error && <p className="text-sm text-red-500 text-center font-bold mb-4">{error}</p>}
+
+                    <button type="submit" className="w-full bg-golden-500 text-white font-bold py-3.5 rounded-lg hover:bg-golden-600 transition-colors shadow-lg shadow-golden-500/20 flex items-center justify-center gap-2">
+                        <Sparkles size={18}/> Finish & Launch
+                    </button>
+                </form>
+            </div>
+          </div>
+      );
+  }
+
+  // --- VIEW: Main Login/Signup Form ---
   return (
-    <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 py-8 overflow-y-auto">
-      <div className="bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 dark:border-charcoal-700 my-auto">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-beige-50 dark:bg-charcoal-900 px-4 py-8 overflow-y-auto relative">
+      <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10 pointer-events-none" style={{ backgroundImage: `url("${APP_WALLPAPER}")`, backgroundSize: 'cover' }}></div>
+      
+      <div className="relative z-10 bg-white dark:bg-charcoal-800 p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 dark:border-charcoal-700 my-auto">
+        <div className="text-center mb-8 flex flex-col items-center">
+            <img src={APP_LOGO} alt="LaunchPad Logo" className="w-24 h-24 mb-4 drop-shadow-xl hover:scale-110 transition-transform" />
             <h1 className="text-4xl font-extrabold tracking-tight text-charcoal-900 dark:text-white">LaunchPad<span className="text-golden-500">.</span></h1>
             <p className="text-sm font-medium text-coral-500 mt-2 uppercase tracking-wide">Cameroon's Opportunity Engine</p>
         </div>
@@ -358,16 +552,7 @@ const AuthScreen: React.FC<Props> = ({ onLogin }) => {
                          </div>
                     </div>
                     
-                    <input type="text" placeholder="Field of Study (e.g. Law)" className="w-full p-3 rounded-lg border border-gray-200 dark:border-charcoal-600 bg-transparent dark:text-white text-base md:text-sm" value={academicBackground} onChange={e => setAcademicBackground(e.target.value)} />
-                    
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Interests</label>
-                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto no-scrollbar border border-gray-100 dark:border-charcoal-700 p-2 rounded-lg">
-                            {availableInterests.map(i => (
-                                <button key={i} type="button" onClick={() => toggleSelection(i, interests, setInterests)} className={`px-2 py-1 text-xs font-bold rounded-full border transition-colors ${interests.includes(i) ? 'bg-charcoal-800 text-white dark:bg-white dark:text-charcoal-900 border-charcoal-800' : 'border-gray-300 text-gray-500'}`}>{i}</button>
-                            ))}
-                        </div>
-                    </div>
+                    <input type="text" placeholder="Field of Study (e.g. Law)" required className="w-full p-3 rounded-lg border border-gray-200 dark:border-charcoal-600 bg-transparent dark:text-white text-base md:text-sm" value={academicBackground} onChange={e => setAcademicBackground(e.target.value)} />
 
                     <input type="password" placeholder="Create Password" required className="w-full p-3 rounded-lg border border-gray-200 dark:border-charcoal-600 bg-transparent dark:text-white text-base md:text-sm" value={password} onChange={e => setPassword(e.target.value)} />
                 </div>

@@ -20,28 +20,94 @@ export type Language = 'en' | 'fr' | 'pidgin' | 'de' | 'zh' | 'es';
 
 export type AIVoice = 'Kore' | 'Puck' | 'Fenrir' | 'Charon' | 'Aoede';
 
+export type LabsType = 'Code' | 'Design' | 'Eng' | 'Writer' | 'Audio' | 'Artist';
+
+// --- Ecosystem Types ---
+
+export interface UserStats {
+  xp: number;
+  rank: string; // e.g. "Novice", "Explorer", "Master"
+  problemsSolved: number;
+  solutionsPosted: number;
+  projectsCompleted: number;
+  communityScore: number; // 0-100
+  streakDays: number;
+  activityData: { day: string; activity: number }[]; // For charts
+}
+
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  activityLevel: 'Quiet' | 'Active' | 'Very Active';
+  tags: string[];
+  category: 'Tech' | 'Art' | 'STEM' | 'Business' | 'General';
+  educationLevel: 'High School' | 'Undergraduate' | 'Graduate' | 'All';
+  isVerified?: boolean; // For "Authentic Communities" like GDG
+  image?: string;
+}
+
+export interface CommunityProblem {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  tags: string[];
+  authorName: string;
+  date: string;
+  likes: number;
+  comments: number;
+  solutions?: { id: string, author: string, content: string, aiFeedback?: string }[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  members: string[]; // Names or IDs
+  type: 'Study' | 'Project' | 'Hackathon' | 'Social';
+  nextMeeting?: string;
+  tasksPending: number;
+}
+
+export interface LabSession {
+  id: string;
+  name: string;
+  type: LabsType;
+  lastEdited: string;
+  collaborators: string[];
+  status: 'Active' | 'Saved';
+}
+
+export interface ApplicationMaterials {
+    cv: string;
+    coverLetter: string;
+    emailDraft: string;
+}
+
+// --- End Ecosystem Types ---
+
 export interface Opportunity {
   id: string;
   title: string;
   organization: string;
-  logo?: string; // Organization logo URL
+  logo?: string; 
   category: Category;
   regionScope: RegionScope;
-  location: string; // Specific city or "Remote"
+  location: string; 
   deadline: string;
   description: string;
-  image?: string; // Legacy field, mapped to mediaUrl if mediaType is image
+  image?: string; 
   tags: string[];
   isBookmarked?: boolean;
   postedAt: string;
   status: 'approved' | 'pending';
   authorRole: UserRole;
   
-  // Media Fields
   mediaUrl?: string;
   mediaType?: 'image' | 'video';
 
-  // New specific fields
   cost: 'Free' | 'Paid';
   costAmount?: string;
   eligibility: string;
@@ -49,7 +115,6 @@ export interface Opportunity {
   benefits: string;
   applicationLink: string;
   
-  // Smart filter helpers
   targetEducationLevels: string[];
   isOnline: boolean;
 }
@@ -82,28 +147,31 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   education: string;
-  city: string; // Critical for on-site filtering
+  city: string; 
   country: string;
   age: number;
-  gender?: 'Male' | 'Female' | 'Prefer not to say'; // New field
+  gender?: 'Male' | 'Female' | 'Prefer not to say';
   bio?: string;
   username?: string;
   image?: string;
-  language?: Language; // New field
+  language?: Language;
   
-  // User Specific
-  academicBackground?: string; // e.g. "Computer Science", "Economics"
+  academicBackground?: string; 
   graduationYear?: string;
   interests: string[];
-  specificNeeds?: string[]; // e.g. "Funding", "Mentorship"
+  specificNeeds?: string[]; 
   targetCategories?: Category[];
+  goals?: string; 
   
-  // User Activity & Gamification
   opportunitiesApplied?: number;
   opportunitiesSaved?: number;
-  achievements?: string[]; // e.g. "Profile Completed", "First Application"
+  achievements?: string[]; 
   
-  // Mentor Specific Fields
+  joinedCommunityIds?: string[]; // Added for persistence
+
+  // Stats for Dashboard
+  stats?: UserStats;
+
   profession?: string;
   yearsExperience?: number;
   currentRole?: string;
@@ -118,11 +186,9 @@ export interface UserProfile {
   portfolioLink?: string;
   requests?: MentorshipRequest[];
   
-  // Admin Specific
   adminRole?: 'Super Admin' | 'Moderator' | 'Content Manager';
   permissions?: string[];
 
-  // Settings
   settings?: {
       notifications: boolean;
       push: boolean;
@@ -130,7 +196,11 @@ export interface UserProfile {
       news: boolean;
       privacyProfile?: boolean;
       showActivity?: boolean;
-      voicePreference?: AIVoice; // New field
+      voicePreference?: AIVoice;
+      // New Settings
+      darkMode?: boolean;
+      themeColor?: string;
+      twoFactor?: boolean;
   }
 }
 
@@ -152,7 +222,7 @@ export interface FilterState {
 export interface Partner {
   id: string;
   name: string;
-  logo: string; // initials or url
+  logo: string; 
   description: string;
   category: 'Tech' | 'Education' | 'NGO' | 'Corporate';
   website: string;
