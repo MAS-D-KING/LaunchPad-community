@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Opportunity, SuccessStory, MentorApplication } from '../types';
+import { Check, Video, Image as ImageIcon } from 'lucide-react';
 
 interface Props {
   onSubmitOp: (op: Partial<Opportunity>) => void;
@@ -17,10 +18,29 @@ const UserSubmission: React.FC<Props> = ({ onSubmitOp, onSubmitStory, onSubmitMe
   const [opTitle, setOpTitle] = useState('');
   const [opLink, setOpLink] = useState('');
   const [opDesc, setOpDesc] = useState('');
+  const [opMedia, setOpMedia] = useState<{url: string, type: 'image' | 'video'} | null>(null);
 
   const [mentorProfession, setMentorProfession] = useState('');
   const [mentorBio, setMentorBio] = useState('');
   const [mentorExpertise, setMentorExpertise] = useState('');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const type = file.type.startsWith('video') ? 'video' : 'image';
+          if (file.size > 5 * 1024 * 1024) {
+              alert("File too large. Max 5MB.");
+              return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setOpMedia({ type, url: reader.result as string });
+          };
+          reader.readAsDataURL(file);
+      }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +58,14 @@ const UserSubmission: React.FC<Props> = ({ onSubmitOp, onSubmitStory, onSubmitMe
             title: opTitle,
             applicationLink: opLink,
             description: opDesc,
-            status: 'pending',
+            status: 'approved', // Auto-approved as requested
             category: 'Scholarship',
-            authorRole: 'User'
+            authorRole: 'User',
+            mediaType: opMedia?.type,
+            mediaUrl: opMedia?.url
         });
-        alert('Opportunity suggestion submitted!');
-        setOpTitle(''); setOpLink(''); setOpDesc('');
+        alert('Opportunity suggestion posted!');
+        setOpTitle(''); setOpLink(''); setOpDesc(''); setOpMedia(null);
     } else if (type === 'mentor') {
         onSubmitMentorApp({
             profession: mentorProfession,
@@ -104,6 +126,22 @@ const UserSubmission: React.FC<Props> = ({ onSubmitOp, onSubmitStory, onSubmitMe
                         placeholder="Brief description..." rows={4}
                         value={opDesc} onChange={e => setOpDesc(e.target.value)} required
                     />
+                    
+                     <div className="border border-dashed border-gray-300 dark:border-charcoal-600 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-charcoal-900" onClick={() => fileInputRef.current?.click()}>
+                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleMediaUpload} />
+                       {opMedia ? (
+                           <div className="flex items-center justify-center gap-2 text-green-600 font-bold">
+                               <Check size={20}/> Media Attached ({opMedia.type})
+                           </div>
+                       ) : (
+                           <div className="flex flex-col items-center gap-2 text-gray-500">
+                               <div className="flex gap-2">
+                                   <ImageIcon size={24}/> <Video size={24}/>
+                               </div>
+                               <p className="text-sm font-bold">Upload Image or Video (Optional)</p>
+                           </div>
+                       )}
+                  </div>
                 </>
             )}
 
@@ -130,7 +168,7 @@ const UserSubmission: React.FC<Props> = ({ onSubmitOp, onSubmitStory, onSubmitMe
             )}
 
             <button className="bg-golden-500 text-white px-8 py-3 rounded-lg hover:bg-golden-600 font-bold w-full sm:w-auto shadow-lg shadow-golden-500/20 transition-all">
-                Submit for Approval
+                Submit
             </button>
         </form>
     </div>

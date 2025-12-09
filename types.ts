@@ -30,13 +30,17 @@ export interface Opportunity {
   location: string; // Specific city or "Remote"
   deadline: string;
   description: string;
-  image?: string; // URL or base64 placeholder
+  image?: string; // Legacy field, mapped to mediaUrl if mediaType is image
   tags: string[];
   isBookmarked?: boolean;
   postedAt: string;
   status: 'approved' | 'pending';
   authorRole: UserRole;
   
+  // Media Fields
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+
   // New specific fields
   cost: 'Free' | 'Paid';
   costAmount?: string;

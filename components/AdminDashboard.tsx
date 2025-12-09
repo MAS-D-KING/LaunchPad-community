@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Opportunity, SuccessStory, Category, RegionScope, UserProfile, MentorApplication } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Plus, Check, X, Send, Mail } from 'lucide-react';
+import { Plus, Check, X, Send, Mail, Image as ImageIcon, Video } from 'lucide-react';
 
 interface Props {
   opportunities: Opportunity[];
@@ -32,6 +32,8 @@ const AdminDashboard: React.FC<Props> = ({
     tags: []
   });
   const [reqInput, setReqInput] = useState('');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categoryData = React.useMemo(() => {
     const counts: Record<string, number> = {};
@@ -67,7 +69,9 @@ const AdminDashboard: React.FC<Props> = ({
         benefits: newPost.benefits || '',
         applicationLink: newPost.applicationLink || '#',
         targetEducationLevels: [],
-        isOnline: newPost.isOnline || false
+        isOnline: newPost.isOnline || false,
+        mediaType: newPost.mediaType,
+        mediaUrl: newPost.mediaUrl
     };
     setOpportunities([post, ...opportunities]);
     alert('Post published successfully!');
@@ -90,6 +94,23 @@ const AdminDashboard: React.FC<Props> = ({
         ...prev,
         requirements: (prev.requirements || []).filter((_, i) => i !== index)
     }));
+  };
+
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const type = file.type.startsWith('video') ? 'video' : 'image';
+          // Check size (e.g. limit to 5MB for 'low data' feeling)
+          if (file.size > 5 * 1024 * 1024) {
+              alert("File too large. Please upload media under 5MB.");
+              return;
+          }
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setNewPost(prev => ({ ...prev, mediaType: type, mediaUrl: reader.result as string }));
+          };
+          reader.readAsDataURL(file);
+      }
   };
 
   const approveItem = (id: string, type: 'op' | 'story') => {
@@ -190,6 +211,23 @@ const AdminDashboard: React.FC<Props> = ({
 
                   <textarea placeholder="Description" rows={4} className="w-full p-3 border rounded-lg dark:bg-charcoal-700 dark:text-white outline-none" value={newPost.description} onChange={e => setNewPost({...newPost, description: e.target.value})} />
                   
+                  {/* Media Upload */}
+                  <div className="border border-dashed border-gray-300 dark:border-charcoal-600 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-charcoal-900" onClick={() => fileInputRef.current?.click()}>
+                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleMediaUpload} />
+                       {newPost.mediaUrl ? (
+                           <div className="flex items-center justify-center gap-2 text-green-600 font-bold">
+                               <Check size={20}/> Media Attached ({newPost.mediaType})
+                           </div>
+                       ) : (
+                           <div className="flex flex-col items-center gap-2 text-gray-500">
+                               <div className="flex gap-2">
+                                   <ImageIcon size={24}/> <Video size={24}/>
+                               </div>
+                               <p className="text-sm font-bold">Upload Image or Video (Low Res)</p>
+                           </div>
+                       )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                       <input placeholder="Eligibility Criteria" className="w-full p-3 border rounded-lg dark:bg-charcoal-700 dark:text-white outline-none" value={newPost.eligibility} onChange={e => setNewPost({...newPost, eligibility: e.target.value})} />
                       <input placeholder="Benefits" className="w-full p-3 border rounded-lg dark:bg-charcoal-700 dark:text-white outline-none" value={newPost.benefits} onChange={e => setNewPost({...newPost, benefits: e.target.value})} />
@@ -216,7 +254,8 @@ const AdminDashboard: React.FC<Props> = ({
           </div>
       )}
 
-      {activeTab === 'review' && (
+      {/* Review tabs remain similar, omitting for brevity as they are unchanged logic-wise */}
+       {activeTab === 'review' && (
           <div className="space-y-6 max-w-3xl mx-auto">
                <div className="flex justify-end">
                    <button onClick={() => setActiveTab('mentor-review')} className="text-sm font-bold text-golden-500 hover:underline">View Mentor Applications</button>
@@ -260,6 +299,7 @@ const AdminDashboard: React.FC<Props> = ({
           </div>
       )}
 
+      {/* Mentor Review & List Tabs remain largely unchanged */}
       {activeTab === 'mentor-review' && (
           <div className="space-y-6 max-w-3xl mx-auto">
               <div className="flex justify-between items-center mb-4">

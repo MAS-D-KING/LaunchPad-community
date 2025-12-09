@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Menu, X, Moon, Sun, User as UserIcon, LayoutDashboard, 
-  Home, Sparkles, LogOut, Users, BookOpen, Handshake, Briefcase, Star, Settings, Languages
+  Home, Sparkles, LogOut, Users, BookOpen, Handshake, Briefcase, Star, Settings, Languages, PlaySquare
 } from 'lucide-react';
 import OpportunityCard from './OpportunityCard';
 import AdminDashboard from './AdminDashboard';
@@ -14,6 +14,7 @@ import ProfileSettings from './ProfileSettings';
 import PartnersHub from './PartnersHub';
 import LearningCenter from './LearningCenter';
 import SettingsPage from './SettingsPage';
+import MediaFeed from './MediaFeed';
 import VoiceAssistant from './VoiceAssistant';
 import { generateSmartOpportunities } from '../services/geminiService';
 import { MOCK_USER, INITIAL_OPPORTUNITIES, CATEGORIES, INITIAL_SUCCESS_STORIES, MOCK_MENTORS, TRANSLATIONS } from '../constants';
@@ -24,7 +25,7 @@ const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [language, setLanguage] = useState<Language>('en'); // Default to English
   
-  const [currentView, setCurrentView] = useState<'feed' | 'profile' | 'admin' | 'submit' | 'mentorship' | 'mentor-dashboard' | 'partners' | 'learning' | 'settings'>('feed');
+  const [currentView, setCurrentView] = useState<'feed' | 'profile' | 'admin' | 'submit' | 'mentorship' | 'mentor-dashboard' | 'partners' | 'learning' | 'settings' | 'media-feed'>('feed');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // App Data State
@@ -120,7 +121,9 @@ const App: React.FC = () => {
         eligibility: 'Open',
         benefits: 'N/A',
         applicationLink: '#',
-        targetEducationLevels: []
+        targetEducationLevels: [],
+        mediaType: op.mediaType,
+        mediaUrl: op.mediaUrl
       };
       setOpportunities(prev => [newOp, ...prev]);
   };
@@ -214,7 +217,7 @@ const App: React.FC = () => {
              category: 'Job',
              description: op.description || '',
              applicationLink: op.applicationLink || '#',
-             status: 'pending',
+             status: 'approved', // Auto-approved as requested by updated requirements
              authorRole: 'User'
           } as Opportunity, ...prev]);
       },
@@ -248,6 +251,11 @@ const App: React.FC = () => {
 
   if (!user) {
     return <AuthScreen onLogin={(u) => setUser(u)} />;
+  }
+
+  // Render Full Screen Media Feed if Active
+  if (currentView === 'media-feed') {
+      return <MediaFeed opportunities={opportunities} onBack={() => setCurrentView('feed')} />;
   }
 
   return (
@@ -298,6 +306,7 @@ const App: React.FC = () => {
         <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto no-scrollbar">
           <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2">{t.platform}</p>
           <NavButton active={currentView === 'feed'} onClick={() => { setCurrentView('feed'); setIsSidebarOpen(false); }} icon={<Home size={18} />} label={t.feed} />
+          <NavButton active={currentView === 'media-feed'} onClick={() => { setCurrentView('media-feed'); setIsSidebarOpen(false); }} icon={<PlaySquare size={18} />} label={t.watch} />
           <NavButton active={currentView === 'mentorship'} onClick={() => { setCurrentView('mentorship'); setIsSidebarOpen(false); }} icon={<Users size={18} />} label={t.mentorship} />
           <NavButton active={currentView === 'partners'} onClick={() => { setCurrentView('partners'); setIsSidebarOpen(false); }} icon={<Handshake size={18} />} label={t.partners} />
           <NavButton active={currentView === 'learning'} onClick={() => { setCurrentView('learning'); setIsSidebarOpen(false); }} icon={<BookOpen size={18} />} label={t.learning} />

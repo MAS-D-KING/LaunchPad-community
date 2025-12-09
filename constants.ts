@@ -7,6 +7,7 @@ export const TRANSLATIONS = {
     welcome: "Guiding Youths Into Opportunity",
     platform: "Platform",
     feed: "Opportunities Feed",
+    watch: "Watch & Discover",
     mentorship: "Mentorship Hub",
     partners: "Partners & Experts",
     learning: "Learning Center",
@@ -42,6 +43,7 @@ export const TRANSLATIONS = {
     welcome: "Guider les jeunes vers l'opportunité",
     platform: "Plateforme",
     feed: "Fil d'opportunités",
+    watch: "Regarder & Découvrir",
     mentorship: "Mentorat",
     partners: "Partenaires & Experts",
     learning: "Centre d'apprentissage",
@@ -77,6 +79,7 @@ export const TRANSLATIONS = {
     welcome: "We Di Show Wuna Road for Opportunity",
     platform: "Di Platform",
     feed: "Opportunities Dem",
+    watch: "Look & See",
     mentorship: "Mentorship Corner",
     partners: "People Weh Di Help",
     learning: "Place for Learn",
@@ -112,6 +115,7 @@ export const TRANSLATIONS = {
     welcome: "Jugendliche zu Chancen führen",
     platform: "Plattform",
     feed: "Möglichkeiten",
+    watch: "Ansehen & Entdecken",
     mentorship: "Mentoring-Hub",
     partners: "Partner & Experten",
     learning: "Lernzentrum",
@@ -147,6 +151,7 @@ export const TRANSLATIONS = {
     welcome: "引导青年走向机遇",
     platform: "平台",
     feed: "机会动态",
+    watch: "观看与发现",
     mentorship: "导师中心",
     partners: "合作伙伴",
     learning: "学习中心",
@@ -182,6 +187,7 @@ export const TRANSLATIONS = {
     welcome: "Guiando a los jóvenes hacia oportunidades",
     platform: "Plataforma",
     feed: "Oportunidades",
+    watch: "Ver y Descubrir",
     mentorship: "Centro de Mentoría",
     partners: "Socios y Expertos",
     learning: "Centro de Aprendizaje",
@@ -213,6 +219,44 @@ export const TRANSLATIONS = {
     noOpportunities: "No se encontraron oportunidades.",
     tryAdjusting: "Intenta ajustar tus filtros."
   }
+};
+
+// Content Translations Dictionary (Mock Database)
+export const CONTENT_TRANSLATIONS = {
+    fr: {
+        'Silicon Mountain Code Fest 2024': {
+            title: 'Festival de Code Silicon Mountain 2024',
+            description: 'Le plus grand concours de code à Buea. Formez votre équipe et créez des solutions.',
+            location: 'Buea',
+            category: 'Compétition'
+        },
+        'Orange Cameroon Pulse Internship': {
+            title: 'Stage Orange Cameroun Pulse',
+            description: 'Rejoignez l\'équipe numérique d\'Orange. Recherche de développeurs frontend.',
+            location: 'Douala',
+            category: 'Stage'
+        },
+        'Presidential Excellence Grant': {
+            title: 'Bourse d\'Excellence Présidentielle',
+            description: 'Bourse pour les étudiants universitaires les plus performants.',
+            location: 'Yaoundé',
+            category: 'Bourse'
+        }
+    },
+    pidgin: {
+        'Silicon Mountain Code Fest 2024': {
+            title: 'Silicon Mountain Code Challange 2024',
+            description: 'Di biggest coding competition for Buea. Bring ya man dem make wuna build things.',
+            location: 'Buea',
+            category: 'Competition'
+        },
+        'Orange Cameroon Pulse Internship': {
+            title: 'Work with Orange Cameroon',
+            description: 'Join Orange dem digital team. Dem di find people weh sabi code website.',
+            location: 'Douala',
+            category: 'Internship'
+        }
+    }
 };
 
 // Hardcoded Admin Credentials
@@ -387,7 +431,9 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     requirements: ['Laptop', 'Team of 3'],
     benefits: '1M XAF Prize Pool, Job Offers',
     applicationLink: '#',
-    targetEducationLevels: ['Undergraduate', 'Self-Taught']
+    targetEducationLevels: ['Undergraduate', 'Self-Taught'],
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=600'
   },
   {
     id: '2',
@@ -409,7 +455,9 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     requirements: ['CV', 'Portfolio', 'School Letter'],
     benefits: 'Monthly Allowance (80k XAF), Experience',
     applicationLink: '#',
-    targetEducationLevels: ['Undergraduate', 'Graduate']
+    targetEducationLevels: ['Undergraduate', 'Graduate'],
+    mediaType: 'video',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-group-of-young-people-working-together-in-an-office-43956-large.mp4'
   },
   {
     id: '3',
@@ -453,7 +501,9 @@ export const INITIAL_OPPORTUNITIES: Opportunity[] = [
     requirements: ['Essays', 'References', 'Transcripts'],
     benefits: 'Full Tuition, Accommodation, Stipend, Flight',
     applicationLink: '#',
-    targetEducationLevels: ['Graduate', 'Undergraduate']
+    targetEducationLevels: ['Graduate', 'Undergraduate'],
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600'
   },
   {
     id: '5',

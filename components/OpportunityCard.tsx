@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Opportunity } from '../types';
-import { MapPin, Calendar, Bookmark, Share2, Clock, ArrowRight, ChevronDown, ChevronUp, Globe, Edit2, Trash2, Tag } from 'lucide-react';
+import { MapPin, Calendar, Bookmark, Share2, Clock, ArrowRight, ChevronDown, ChevronUp, Globe, Edit2, Trash2, Tag, Play } from 'lucide-react';
 
 interface Props {
   data: Opportunity;
@@ -13,6 +13,7 @@ interface Props {
 
 const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const isDeadLineSoon = () => {
     if (!data.deadline || data.deadline === 'TBD') return false;
@@ -21,6 +22,20 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
     return diffDays >= 0 && diffDays <= 7;
+  };
+
+  const handleVideoPlay = (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      const video = e.currentTarget.querySelector('video');
+      if (video) {
+          if (video.paused) {
+              video.play();
+              setIsPlaying(true);
+          } else {
+              video.pause();
+              setIsPlaying(false);
+          }
+      }
   };
 
   return (
@@ -87,6 +102,32 @@ const OpportunityCard: React.FC<Props> = ({ data, onBookmark, isAdmin, onEdit, o
       <p className={`text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed mt-2 ${isExpanded ? '' : 'line-clamp-2'}`}>
         {data.description}
       </p>
+
+      {/* Media Content (Facebook Style) */}
+      {(data.mediaUrl || data.image) && (
+          <div className="mb-4 rounded-lg overflow-hidden border border-gray-100 dark:border-charcoal-700 bg-black">
+              {data.mediaType === 'video' ? (
+                  <div className="relative cursor-pointer aspect-video" onClick={handleVideoPlay}>
+                      <video 
+                        src={data.mediaUrl} 
+                        className="w-full h-full object-cover" 
+                        loop 
+                        muted={!isPlaying}
+                        playsInline
+                      />
+                      {!isPlaying && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/20 transition-colors">
+                              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+                                  <Play size={24} fill="white" className="text-white ml-1"/>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              ) : (
+                  <img src={data.mediaUrl || data.image} alt="Opportunity" className="w-full h-auto max-h-[400px] object-cover" />
+              )}
+          </div>
+      )}
 
       {/* Expanded Details */}
       {isExpanded && (
