@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Opportunity, SuccessStory, Category, RegionScope, UserProfile, MentorApplication } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Plus, Check, X, Image as ImageIcon, Send, Trash2, Edit2, Save, Users, Briefcase, Mail } from 'lucide-react';
+import { Plus, Check, X, Send, Mail } from 'lucide-react';
 
 interface Props {
   opportunities: Opportunity[];
@@ -147,19 +147,19 @@ const AdminDashboard: React.FC<Props> = ({
                <div className="bg-white dark:bg-charcoal-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-charcoal-700 min-w-0">
                   <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">Engagement Overview</h3>
                   <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg">
+                      <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg min-w-0">
                           <p className="text-xs font-bold text-gray-400 uppercase">Total Users</p>
                           <p className="text-2xl font-bold text-charcoal-900 dark:text-white">780+</p>
                       </div>
-                      <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg">
+                      <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg min-w-0">
                           <p className="text-xs font-bold text-gray-400 uppercase">Active Ops</p>
                           <p className="text-2xl font-bold text-charcoal-900 dark:text-white">{opportunities.filter(o => o.status === 'approved').length}</p>
                       </div>
-                       <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg">
+                       <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg min-w-0">
                           <p className="text-xs font-bold text-gray-400 uppercase">Mentors</p>
                           <p className="text-2xl font-bold text-charcoal-900 dark:text-white">{mentors.length}</p>
                       </div>
-                       <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg">
+                       <div className="p-4 bg-beige-50 dark:bg-charcoal-700 rounded-lg min-w-0">
                           <p className="text-xs font-bold text-gray-400 uppercase">Success Stories</p>
                           <p className="text-2xl font-bold text-charcoal-900 dark:text-white">{stories.length}</p>
                       </div>

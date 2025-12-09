@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Menu, X, Moon, Sun, User as UserIcon, LayoutDashboard, 
@@ -94,6 +93,31 @@ const App: React.FC = () => {
       if(newTitle && newDesc) {
           setOpportunities(prev => prev.map(o => o.id === op.id ? { ...o, title: newTitle, description: newDesc } : o));
       }
+  };
+
+  const handleCreateOpportunity = (op: Partial<Opportunity>) => {
+      const newOp: Opportunity = {
+        id: Math.random().toString(),
+        title: op.title || 'New Opportunity',
+        organization: 'Admin Posted',
+        category: op.category || 'Job',
+        description: op.description || '',
+        location: 'Cameroon',
+        regionScope: 'Cameroon',
+        deadline: '2024-12-31',
+        isOnline: false,
+        postedAt: 'Just now',
+        status: 'approved',
+        authorRole: 'Admin',
+        tags: [],
+        requirements: [],
+        cost: 'Free',
+        eligibility: 'Open',
+        benefits: 'N/A',
+        applicationLink: '#',
+        targetEducationLevels: []
+      };
+      setOpportunities(prev => [newOp, ...prev]);
   };
 
   const handleMentorReview = (appId: string, approved: boolean) => {
@@ -224,7 +248,16 @@ const App: React.FC = () => {
   return (
     <div className="fixed inset-0 w-full flex flex-col md:flex-row font-sans bg-beige-50 dark:bg-charcoal-900 transition-colors duration-300 overflow-hidden relative">
       
-      <VoiceAssistant user={user} opportunities={opportunities} onBookmark={toggleBookmark} language={language} />
+      <VoiceAssistant 
+          user={user} 
+          opportunities={opportunities} 
+          mentorApps={mentorApps}
+          onBookmark={toggleBookmark} 
+          language={language} 
+          setDarkMode={setDarkMode}
+          onPostOpportunity={handleCreateOpportunity}
+          onReviewMentorApp={handleMentorReview}
+      />
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
@@ -414,8 +447,8 @@ const App: React.FC = () => {
                             {index === 1 && (
                                 <div className="bg-gradient-to-r from-charcoal-900 to-charcoal-800 rounded-xl p-6 mb-6 text-white shadow-lg border border-charcoal-700">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-bold flex items-center gap-2 text-golden-400"><Sparkles size={18} fill="currentColor"/> Verified Mentors</h3>
-                                        <button onClick={() => setCurrentView('mentorship')} className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full hover:bg-white/20 transition-colors">View All</button>
+                                        <h3 className="font-bold flex items-center gap-2 text-golden-400"><Sparkles size={18} fill="currentColor"/> {t.verifiedMentors}</h3>
+                                        <button onClick={() => setCurrentView('mentorship')} className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full hover:bg-white/20 transition-colors">{t.viewAll}</button>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {mentors.slice(0, 3).map(m => (
@@ -437,8 +470,8 @@ const App: React.FC = () => {
                  </>
                ) : (
                  <div className="text-center py-20">
-                   <p className="text-gray-500 font-medium text-lg">No opportunities found.</p>
-                   {user.city && <p className="text-sm text-gray-400 mt-2">Try adjusting your filters or search for '{user.city}'.</p>}
+                   <p className="text-gray-500 font-medium text-lg">{t.noOpportunities}</p>
+                   {user.city && <p className="text-sm text-gray-400 mt-2">{t.tryAdjusting} '{user.city}'.</p>}
                  </div>
                )}
             </div>

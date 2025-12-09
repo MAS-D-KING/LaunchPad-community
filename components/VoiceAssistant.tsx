@@ -2,13 +2,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type, FunctionDeclaration } from '@google/genai';
 import { Mic, MicOff, Volume2, X, Loader2 } from 'lucide-react';
-import { UserProfile, Opportunity, Language } from '../types';
+import { UserProfile, Opportunity, Language, MentorApplication, Category } from '../types';
 
 interface Props {
   user: UserProfile;
   opportunities: Opportunity[];
+  mentorApps: MentorApplication[];
   onBookmark: (id: string) => void;
   language: Language;
+  setDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
+  onPostOpportunity: (op: Partial<Opportunity>) => void;
+  onReviewMentorApp: (id: string, approved: boolean) => void;
 }
 
 const apiKey = process.env.API_KEY || '';
@@ -61,7 +65,10 @@ async function decodeAudioData(
   return buffer;
 }
 
-const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, language }) => {
+const VoiceAssistant: React.FC<Props> = ({ 
+    user, opportunities, mentorApps, onBookmark, language, 
+    setDarkMode, onPostOpportunity, onReviewMentorApp 
+}) => {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -74,19 +81,55 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const sessionPromiseRef = useRef<Promise<any> | null>(null);
 
+  // --- Tools Definition ---
   const bookmarkTool: FunctionDeclaration = {
     name: 'bookmarkOpportunity',
     description: 'Bookmark or save an opportunity for the user based on the opportunity ID.',
     parameters: {
       type: Type.OBJECT,
       properties: {
-        opportunityId: {
-          type: Type.STRING,
-          description: 'The unique ID of the opportunity to bookmark.'
-        }
+        opportunityId: { type: Type.STRING }
       },
       required: ['opportunityId']
     }
+  };
+
+  const changeThemeTool: FunctionDeclaration = {
+      name: 'changeTheme',
+      description: 'Switch the application theme between dark mode and light mode.',
+      parameters: {
+          type: Type.OBJECT,
+          properties: {
+              mode: { type: Type.STRING, enum: ['dark', 'light'] }
+          },
+          required: ['mode']
+      }
+  };
+
+  const postQuickTool: FunctionDeclaration = {
+      name: 'postQuickOpportunity',
+      description: 'Admins can quickly post a new opportunity. Only use this if the user provides a title and category.',
+      parameters: {
+          type: Type.OBJECT,
+          properties: {
+              title: { type: Type.STRING },
+              category: { type: Type.STRING, enum: ['Scholarship', 'Job', 'Internship', 'Grant'] },
+              description: { type: Type.STRING }
+          },
+          required: ['title', 'category']
+      }
+  };
+
+  const reviewAppTool: FunctionDeclaration = {
+      name: 'approveMentorApp',
+      description: 'Approve a pending mentor application by user name or ID.',
+      parameters: {
+          type: Type.OBJECT,
+          properties: {
+              appId: { type: Type.STRING }
+          },
+          required: ['appId']
+      }
   };
 
   const stopAudio = () => {
@@ -111,11 +154,21 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
   };
 
   const startSession = async () => {
+    if (!apiKey) {
+      setError("No API Key");
+      return;
+    }
     try {
       setIsConnecting(true);
       setError(null);
 
       const InputContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+      if (!InputContextClass) {
+        setError("Audio not supported");
+        setIsConnecting(false);
+        return;
+      }
+
       const inputCtx = new InputContextClass({ sampleRate: 16000 });
       const outputCtx = new InputContextClass({ sampleRate: 24000 });
       
@@ -123,50 +176,34 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
       outputAudioContextRef.current = outputCtx;
       nextStartTimeRef.current = 0;
 
-      const today = new Date().toDateString();
-      const opsSummary = opportunities.slice(0, 15).map(o => ({
-        id: o.id, 
-        title: o.title, 
-        deadline: o.deadline, 
-        category: o.category,
-        location: o.location,
-        org: o.organization
+      const opsSummary = opportunities.slice(0, 10).map(o => ({
+        id: o.id, title: o.title, deadline: o.deadline, category: o.category, location: o.location
+      }));
+
+      const appsSummary = mentorApps.filter(a => a.status === 'pending').map(a => ({
+          id: a.id, name: a.name, profession: a.profession
       }));
       
-      let langContext = "Speak in English. Adopt a warm, helpful tone suitable for Anglophone Cameroonian youth.";
-      switch(language) {
-          case 'fr': langContext = "Speak exclusively in French (Français). Adopt a warm, helpful tone suitable for Francophone Cameroonian youth."; break;
-          case 'pidgin': langContext = "Speak in Cameroonian Pidgin English. Be informal, friendly, and act like a local 'Big Bro/Sis' guiding the user."; break;
-          case 'de': langContext = "Speak exclusively in German (Deutsch). Be professional and supportive."; break;
-          case 'zh': langContext = "Speak exclusively in Mandarin Chinese. Be helpful and encouraging."; break;
-          case 'es': langContext = "Speak exclusively in Spanish (Español). Be warm and energetic."; break;
-      }
+      let langContext = "Speak in English.";
+      if (language === 'fr') langContext = "Speak exclusively in French.";
+      else if (language === 'pidgin') langContext = "Speak in Cameroonian Pidgin.";
+      else if (language === 'de') langContext = "Speak in German.";
+      else if (language === 'zh') langContext = "Speak in Chinese.";
+      else if (language === 'es') langContext = "Speak in Spanish.";
 
       const systemInstruction = `
-        You are "LaunchPad Assistant", a knowledgeable and supportive career guide specifically for Cameroonian youth and students.
+        You are "LaunchPad Assistant".
+        Role: ${user.role}.
+        User: ${user.name} in ${user.city}.
+        Language: ${langContext}
         
-        Language Requirement:
-        ${langContext}
-
-        Your Personality:
-        - Encouraging and local. You understand the Cameroonian context (universities like UB, UY1, Silicon Mountain tech scene).
-        - You speak clearly and concisely.
+        Capabilities:
+        1. Find opportunities from this list: ${JSON.stringify(opsSummary)}.
+        2. Toggle Dark Mode (use 'changeTheme').
+        3. If Admin, you can post opportunities (use 'postQuickOpportunity').
+        4. If Admin, you can review mentor applications: ${JSON.stringify(appsSummary)}. Use 'approveMentorApp' if asked.
         
-        User Context:
-        - Name: ${user.name}
-        - City: ${user.city}
-        - Education: ${user.education} in ${user.academicBackground}
-        
-        Current Date: ${today}
-        
-        Task:
-        - Help the user find opportunities from the list provided.
-        - Prioritize opportunities in ${user.city} or online.
-        - If they ask about scholarships, mention specific deadlines.
-        - If they like an opportunity, use the 'bookmarkOpportunity' tool.
-        
-        Available Opportunities:
-        ${JSON.stringify(opsSummary)}
+        Be helpful, concise, and friendly.
       `;
 
       const sessionPromise = ai.live.connect({
@@ -174,7 +211,10 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: systemInstruction,
-          tools: [{ functionDeclarations: [bookmarkTool] }]
+          speechConfig: {
+              voiceConfig: { prebuiltVoiceConfig: { voiceName: user.settings?.voicePreference || 'Kore' } }
+          },
+          tools: [{ functionDeclarations: [bookmarkTool, changeThemeTool, postQuickTool, reviewAppTool] }]
         },
         callbacks: {
           onopen: async () => {
@@ -195,17 +235,11 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
                 for (let i = 0; i < inputData.length; i++) {
                   pcmData[i] = inputData[i] * 32768;
                 }
-                
                 const uint8Buffer = new Uint8Array(pcmData.buffer);
                 const base64Data = encode(uint8Buffer);
 
                 sessionPromise.then(session => {
-                  session.sendRealtimeInput({
-                    media: {
-                      mimeType: 'audio/pcm;rate=16000',
-                      data: base64Data
-                    }
-                  });
+                  session.sendRealtimeInput({ media: { mimeType: 'audio/pcm;rate=16000', data: base64Data } });
                 });
               };
 
@@ -213,7 +247,7 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
               processor.connect(inputCtx.destination);
             } catch (err) {
               console.error('Mic Error:', err);
-              setError('Could not access microphone.');
+              setError('Mic access denied.');
               stopAudio();
             }
           },
@@ -221,22 +255,14 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
             const audioData = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData) {
               setIsSpeaking(true);
-              const audioBuffer = await decodeAudioData(
-                decode(audioData),
-                outputCtx,
-                24000,
-                1
-              );
-              
+              const audioBuffer = await decodeAudioData(decode(audioData), outputCtx, 24000, 1);
               const source = outputCtx.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(outputCtx.destination);
-              
               const now = outputCtx.currentTime;
               const startTime = Math.max(now, nextStartTimeRef.current);
               source.start(startTime);
               nextStartTimeRef.current = startTime + audioBuffer.duration;
-              
               sourcesRef.current.add(source);
               source.onended = () => {
                 sourcesRef.current.delete(source);
@@ -246,57 +272,55 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
 
             if (msg.toolCall) {
               for (const fc of msg.toolCall.functionCalls) {
+                let result = "Success";
+                
                 if (fc.name === 'bookmarkOpportunity') {
-                  const id = (fc.args as any).opportunityId;
-                  onBookmark(id);
-                  sessionPromise.then(session => {
-                    session.sendToolResponse({
-                      functionResponses: {
-                        id: fc.id,
-                        name: fc.name,
-                        response: { result: `Success` }
-                      }
-                    });
-                  });
+                  onBookmark((fc.args as any).opportunityId);
+                } else if (fc.name === 'changeTheme') {
+                    const mode = (fc.args as any).mode;
+                    setDarkMode(mode === 'dark');
+                    result = `Theme changed to ${mode}`;
+                } else if (fc.name === 'postQuickOpportunity') {
+                    const { title, category, description } = fc.args as any;
+                    onPostOpportunity({ title, category: category as Category, description });
+                    result = `Posted ${title}`;
+                } else if (fc.name === 'approveMentorApp') {
+                    const { appId } = fc.args as any;
+                    onReviewMentorApp(appId, true);
+                    result = `Approved application ${appId}`;
                 }
+
+                sessionPromise.then(session => {
+                    session.sendToolResponse({
+                      functionResponses: { id: fc.id, name: fc.name, response: { result } }
+                    });
+                });
               }
             }
           },
-          onclose: () => {
-            console.log('Gemini Live Closed');
-            stopAudio();
-          },
+          onclose: () => stopAudio(),
           onerror: (err) => {
-            console.error('Gemini Live Error:', err);
+            console.error(err);
             setError('Connection error.');
             stopAudio();
           }
         }
       });
-
       sessionPromiseRef.current = sessionPromise;
-
     } catch (err) {
-      console.error('Setup Error:', err);
-      setError('Failed to start assistant.');
+      console.error(err);
+      setError('Failed to start.');
       setIsConnecting(false);
     }
   };
 
-  const toggleAssistant = () => {
-    if (isActive) {
-      stopAudio();
-    } else {
-      startSession();
-    }
-  };
+  const toggleAssistant = () => isActive ? stopAudio() : startSession();
 
   return (
     <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex flex-col items-end gap-2">
       {error && (
-        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg mb-2 animate-fadeIn flex items-center gap-2 font-bold">
-          <span>{error}</span>
-          <button onClick={() => setError(null)}><X size={12}/></button>
+        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg mb-2 flex items-center gap-2 font-bold">
+          <span>{error}</span><button onClick={() => setError(null)}><X size={12}/></button>
         </div>
       )}
 
@@ -315,19 +339,12 @@ const VoiceAssistant: React.FC<Props> = ({ user, opportunities, onBookmark, lang
              <span className={`absolute inset-0 rounded-full border-2 border-golden-300 ${isSpeaking ? 'animate-pulse scale-125' : ''}`}></span>
           </>
         )}
-
-        {isConnecting ? (
-          <Loader2 className="animate-spin" size={24} />
-        ) : isActive ? (
-          isSpeaking ? <Volume2 size={24} /> : <Mic size={24} />
-        ) : (
-          <MicOff size={24} />
-        )}
+        {isConnecting ? <Loader2 className="animate-spin" size={24} /> : isActive ? (isSpeaking ? <Volume2 size={24} /> : <Mic size={24} />) : <MicOff size={24} />}
       </button>
 
       {isActive && (
         <div className="bg-charcoal-900 text-white text-xs px-3 py-1 rounded-full shadow-xl font-bold tracking-wide">
-          {isSpeaking ? (language === 'fr' ? 'Parle...' : 'Speaking...') : (language === 'fr' ? 'Écoute...' : 'Listening...')}
+          {isSpeaking ? 'Speaking...' : 'Listening...'}
         </div>
       )}
     </div>

@@ -72,6 +72,10 @@ const App: React.FC = () => {
 
   const handleUpdateProfile = (data: Partial<UserProfile>) => {
       if (user) {
+          // If language is updated in settings, update local state too
+          if (data.language) {
+              setLanguage(data.language);
+          }
           // Handle nested settings updates if present
           if (data.settings && user.settings) {
               setUser({ ...user, ...data, settings: { ...user.settings, ...data.settings } });
@@ -94,6 +98,31 @@ const App: React.FC = () => {
       if(newTitle && newDesc) {
           setOpportunities(prev => prev.map(o => o.id === op.id ? { ...o, title: newTitle, description: newDesc } : o));
       }
+  };
+
+  const handleCreateOpportunity = (op: Partial<Opportunity>) => {
+      const newOp: Opportunity = {
+        id: Math.random().toString(),
+        title: op.title || 'New Opportunity',
+        organization: 'Admin Posted',
+        category: op.category || 'Job',
+        description: op.description || '',
+        location: 'Cameroon',
+        regionScope: 'Cameroon',
+        deadline: '2024-12-31',
+        isOnline: false,
+        postedAt: 'Just now',
+        status: 'approved',
+        authorRole: 'Admin',
+        tags: [],
+        requirements: [],
+        cost: 'Free',
+        eligibility: 'Open',
+        benefits: 'N/A',
+        applicationLink: '#',
+        targetEducationLevels: []
+      };
+      setOpportunities(prev => [newOp, ...prev]);
   };
 
   const handleMentorReview = (appId: string, approved: boolean) => {
@@ -222,13 +251,19 @@ const App: React.FC = () => {
   }
 
   return (
-    // Layout Logic:
-    // H-[100dvh]: Fits viewport exactly.
-    // Flex-col/row: Sidebar sits on left (desktop), Header on top (mobile).
-    // Overflow-hidden: Root doesn't scroll. Only inner containers scroll.
+    // Layout: Fixed Sidebar (via Flex-Row and Sidebar Height) + Scrollable Main Content
     <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-beige-50 dark:bg-charcoal-900 transition-colors duration-300 overflow-hidden relative">
       
-      <VoiceAssistant user={user} opportunities={opportunities} onBookmark={toggleBookmark} language={language} />
+      <VoiceAssistant 
+          user={user} 
+          opportunities={opportunities} 
+          mentorApps={mentorApps}
+          onBookmark={toggleBookmark} 
+          language={language} 
+          setDarkMode={setDarkMode}
+          onPostOpportunity={handleCreateOpportunity}
+          onReviewMentorApp={handleMentorReview}
+      />
 
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
@@ -240,7 +275,9 @@ const App: React.FC = () => {
 
       {/* Mobile Header - Static (no scroll) */}
       <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-charcoal-800 border-b border-gray-200 dark:border-charcoal-700 shrink-0 z-30">
-        <h1 className="text-xl font-bold tracking-tight text-charcoal-900 dark:text-white">LaunchPad<span className="text-golden-500">.</span></h1>
+        <button onClick={() => setCurrentView('feed')} className="text-xl font-bold tracking-tight text-charcoal-900 dark:text-white flex items-center">
+            LaunchPad<span className="text-golden-500">.</span>
+        </button>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600 dark:text-gray-300">
           {isSidebarOpen ? <X /> : <Menu />}
         </button>
@@ -252,7 +289,9 @@ const App: React.FC = () => {
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static h-full flex flex-col shadow-lg md:shadow-none shrink-0
       `}>
         <div className="p-6 hidden md:block border-b border-gray-100 dark:border-charcoal-700">
-          <h1 className="text-2xl font-bold tracking-tight text-charcoal-900 dark:text-white">LaunchPad<span className="text-golden-500">.</span></h1>
+          <button onClick={() => setCurrentView('feed')} className="text-2xl font-bold tracking-tight text-charcoal-900 dark:text-white block text-left">
+              LaunchPad<span className="text-golden-500">.</span>
+          </button>
           <p className="text-xs text-coral-500 font-medium mt-1 uppercase tracking-wide">Cameroon Edition</p>
         </div>
 
@@ -338,20 +377,28 @@ const App: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2 md:gap-4 ml-4">
-            <div className="relative flex items-center">
-                <Languages size={14} className="absolute left-3 text-gray-500 pointer-events-none"/>
-                <select 
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="pl-8 pr-3 py-1.5 bg-gray-100 dark:bg-charcoal-700 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors outline-none cursor-pointer appearance-none"
-                >
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                    <option value="pidgin">Pidgin</option>
-                    <option value="de">Deutsch</option>
-                    <option value="zh">中文</option>
-                    <option value="es">Español</option>
-                </select>
+            
+            {/* Language Dropdown in Header */}
+            <div className="relative group">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-charcoal-700 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-200 transition-colors">
+                     <Languages size={14} /> 
+                     <select 
+                      value={language}
+                      onChange={(e) => {
+                          const newLang = e.target.value as Language;
+                          setLanguage(newLang);
+                          handleUpdateProfile({ language: newLang });
+                      }}
+                      className="bg-transparent outline-none appearance-none cursor-pointer w-full uppercase"
+                    >
+                        <option value="en">EN</option>
+                        <option value="fr">FR</option>
+                        <option value="pidgin">PID</option>
+                        <option value="de">DE</option>
+                        <option value="zh">ZH</option>
+                        <option value="es">ES</option>
+                    </select>
+                </div>
             </div>
 
             <button 

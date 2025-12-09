@@ -18,6 +18,8 @@ export type MentorService = 'CV Review' | 'Portfolio Review' | 'Interview Prep' 
 
 export type Language = 'en' | 'fr' | 'pidgin' | 'de' | 'zh' | 'es';
 
+export type AIVoice = 'Kore' | 'Puck' | 'Fenrir' | 'Charon' | 'Aoede';
+
 export interface Opportunity {
   id: string;
   title: string;
@@ -124,6 +126,7 @@ export interface UserProfile {
       news: boolean;
       privacyProfile?: boolean;
       showActivity?: boolean;
+      voicePreference?: AIVoice; // New field
   }
 }
 
