@@ -1,10 +1,6 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Search, Menu, X, Moon, Sun, User as UserIcon, LayoutDashboard, 
-  Home, Sparkles, LogOut, Users, BookOpen, Handshake, Briefcase, Star, Settings, Languages, PlaySquare,
-  PieChart, Cpu, MessageSquare
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Menu, X, Moon, Sun, User as UserIcon, LayoutDashboard, Home, Sparkles, LogOut, Users, BookOpen, Handshake, Briefcase, Star, Settings, Languages, PlaySquare, PieChart, Cpu, MessageSquare, Bell } from 'lucide-react';
 import OpportunityCard from './OpportunityCard';
 import AdminDashboard from './AdminDashboard';
 import AuthScreen from './AuthScreen';
@@ -22,10 +18,9 @@ import CommunityHub from './CommunityHub';
 import GroupsHub from './GroupsHub';
 import LaunchPadLabs from './LaunchPadLabs';
 import ApplicationHelper from './ApplicationHelper';
-
 import { generateSmartOpportunities } from '../services/geminiService';
-import { MOCK_USER, INITIAL_OPPORTUNITIES, CATEGORIES, INITIAL_SUCCESS_STORIES, MOCK_MENTORS, TRANSLATIONS, APP_LOGO } from '../constants';
-import { Opportunity, Category, FilterState, UserProfile, SuccessStory, Language, MentorApplication } from '../types';
+import { MOCK_USER, INITIAL_OPPORTUNITIES, CATEGORIES, INITIAL_SUCCESS_STORIES, MOCK_MENTORS, TRANSLATIONS } from '../constants';
+import { Opportunity, Category, FilterState, UserProfile, SuccessStory, Language, MentorApplication, Notification } from '../types';
 
 type AppView = 'dashboard' | 'community' | 'groups' | 'labs' | 'feed' | 'profile' | 'admin' | 'submit' | 'mentorship' | 'mentor-dashboard' | 'partners' | 'learning' | 'settings' | 'media-feed';
 
@@ -52,34 +47,84 @@ const App: React.FC = () => {
   });
 
   const [mentorApps, setMentorApps] = useState<MentorApplication[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInfiniteLoading, setIsInfiniteLoading] = useState(false);
   const [aiMode, setAiMode] = useState(false);
   const [filters, setFilters] = useState<FilterState>({ category: 'All', searchQuery: '', targetRegion: 'My Region' });
-  
   const [selectedOpForHelp, setSelectedOpForHelp] = useState<Opportunity | null>(null);
+  
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  // Persistence Effects (Save to phone storage for bad network)
   useEffect(() => { localStorage.setItem('launchpad_opportunities', JSON.stringify(opportunities)); }, [opportunities]);
   useEffect(() => { localStorage.setItem('launchpad_mentors', JSON.stringify(mentors)); }, [mentors]);
   useEffect(() => { localStorage.setItem('launchpad_stories', JSON.stringify(stories)); }, [stories]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('launchpad_user');
-    if (savedUser) {
-        setUser(JSON.parse(savedUser));
-    }
+    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
   useEffect(() => {
-      if (user) {
-          localStorage.setItem('launchpad_user', JSON.stringify(user));
-      } else {
-          localStorage.removeItem('launchpad_user');
-      }
+      if (user) localStorage.setItem('launchpad_user', JSON.stringify(user));
+      else localStorage.removeItem('launchpad_user');
   }, [user]);
 
   useEffect(() => { if (user?.language) setLanguage(user.language); }, [user]);
   useEffect(() => { if (darkMode) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [darkMode]);
+
+  const addNotification = (type: 'info'|'success'|'warning'|'error', message: string) => {
+      const newNotif: Notification = { id: Date.now().toString(), type, message, timestamp: Date.now(), read: false };
+      setNotifications(prev => [newNotif, ...prev]);
+      // Auto dismiss after 3s
+      setTimeout(() => {
+          setNotifications(prev => prev.filter(n => n.id !== newNotif.id));
+      }, 4000);
+  };
+
+  const loadMoreOpportunities = useCallback(() => {
+      if (isInfiniteLoading || !user) return;
+      setIsInfiniteLoading(true);
+      
+      setTimeout(() => {
+          const newOps: Opportunity[] = [];
+          const baseInterest = user.interests[Math.floor(Math.random() * user.interests.length)] || 'Tech';
+          
+          for (let i = 0; i < 5; i++) {
+              newOps.push({
+                  id: `auto-${Date.now()}-${i}`,
+                  title: `${baseInterest} ${['Internship', 'Scholarship', 'Project'][Math.floor(Math.random()*3)]}`,
+                  organization: ['Google', 'Microsoft', 'MTN', 'Local Startup'][Math.floor(Math.random()*4)],
+                  category: user.targetCategories?.[0] || 'Internship',
+                  regionScope: 'Global',
+                  location: 'Remote',
+                  deadline: '2025-01-01',
+                  isOnline: true,
+                  postedAt: 'Just now',
+                  status: 'approved',
+                  authorRole: 'Admin',
+                  description: `Exciting opportunity in ${baseInterest} tailored for your ${user.education} level.`,
+                  cost: 'Free',
+                  eligibility: `Open to ${user.education} students.`,
+                  requirements: ['CV', 'Cover Letter'],
+                  benefits: 'Experience & Networking',
+                  applicationLink: '#',
+                  targetEducationLevels: [user.education, 'All'],
+                  tags: [baseInterest, 'New']
+              });
+          }
+          
+          setOpportunities(prev => [...prev, ...newOps]);
+          setIsInfiniteLoading(false);
+      }, 1500);
+  }, [user, isInfiniteLoading]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+      if (scrollHeight - scrollTop - clientHeight < 100 && currentView === 'feed') {
+          loadMoreOpportunities();
+      }
+  };
 
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
 
@@ -91,7 +136,6 @@ const App: React.FC = () => {
           if (data.language) setLanguage(data.language); 
           const updatedUser = data.settings && user.settings ? { ...user, ...data, settings: { ...user.settings, ...data.settings } } : { ...user, ...data };
           setUser(updatedUser); 
-          
           const registry = JSON.parse(localStorage.getItem('launchpad_registry') || '[]');
           const updatedRegistry = registry.map((u: any) => u.email === user.email ? { ...u, profile: updatedUser } : u);
           localStorage.setItem('launchpad_registry', JSON.stringify(updatedRegistry));
@@ -106,61 +150,27 @@ const App: React.FC = () => {
           const currentJoins = user.joinedCommunityIds || [];
           if (!currentJoins.includes(communityId)) {
               handleUpdateProfile({ joinedCommunityIds: [...currentJoins, communityId] });
+              addNotification('success', 'Joined Community Successfully!');
           }
       }
   };
 
   const handleCreateOpportunity = (op: Partial<Opportunity>) => { 
       const newOp: Opportunity = {
-        id: Math.random().toString(),
-        title: op.title || 'New Opportunity',
-        organization: 'Admin Posted',
-        category: op.category || 'Job',
-        description: op.description || '',
-        location: 'Cameroon',
-        regionScope: 'Cameroon',
-        deadline: '2024-12-31',
-        isOnline: false,
-        postedAt: 'Just now',
-        status: 'approved',
-        authorRole: 'Admin',
-        tags: [],
-        requirements: [],
-        cost: 'Free',
-        eligibility: 'Open',
-        benefits: 'N/A',
-        applicationLink: '#',
-        targetEducationLevels: []
+        id: Math.random().toString(), title: op.title || 'New Opportunity', organization: 'Admin Posted', category: op.category || 'Job', description: op.description || '', location: 'Cameroon', regionScope: 'Cameroon', deadline: '2024-12-31', isOnline: false, postedAt: 'Just now', status: 'approved', authorRole: 'Admin', tags: [], requirements: [], cost: 'Free', eligibility: 'Open', benefits: 'N/A', applicationLink: '#', targetEducationLevels: []
       };
       setOpportunities(prev => [newOp, ...prev]);
+      addNotification('success', 'Opportunity Posted!');
   };
   
   const handleMentorReview = (appId: string, approved: boolean) => { 
       setMentorApps(prev => prev.map(app => app.id === appId ? { ...app, status: approved ? 'approved' : 'rejected' } : app));
       if (approved) {
           const app = mentorApps.find(a => a.id === appId);
-          if (app) {
-              const newMentor: UserProfile = {
-                  id: `m-${Date.now()}`,
-                  name: app.name,
-                  email: app.email,
-                  role: 'Mentor',
-                  education: 'N/A',
-                  city: 'Cameroon',
-                  country: 'Cameroon',
-                  age: 25,
-                  bio: app.bio,
-                  profession: app.profession,
-                  currentRole: app.profession,
-                  expertise: app.expertise,
-                  availability: 'Weekly',
-                  services: ['Career Advice'],
-                  interests: [],
-                  rating: 5.0,
-                  reviewCount: 0
-              };
-              setMentors(prev => [...prev, newMentor]);
-          }
+          if (app) setMentors(prev => [...prev, { id: `m-${Date.now()}`, name: app.name, email: app.email, role: 'Mentor', education: 'N/A', city: 'Cameroon', country: 'Cameroon', age: 25, bio: app.bio, profession: app.profession, currentRole: app.profession, expertise: app.expertise, availability: 'Weekly', services: ['Career Advice'], interests: [], rating: 5.0, reviewCount: 0 }]);
+          addNotification('success', 'Mentor Approved');
+      } else {
+          addNotification('info', 'Mentor Rejected');
       }
   };
   
@@ -175,33 +185,35 @@ const App: React.FC = () => {
 
   useEffect(() => { if (!filters.searchQuery) return; const timer = setTimeout(() => handleSearch(), 800); return () => clearTimeout(timer); }, [filters.searchQuery, handleSearch]);
 
-  // --- STRICT FILTERING ENGINE ---
   const displayedOpportunities = opportunities.filter(op => {
-      // 1. Status Filter: Admins can see pending posts in the feed to verify them
+      // 1. Status Filter
       if (op.status !== 'approved' && user?.role !== 'Admin') return false;
       
       if (user && user.role === 'User') {
+         // 2. Strict Education Filter
          const userEdu = user.education;
          const opLevels = op.targetEducationLevels || [];
-         const opCats = op.category;
-         const userCats = user.targetCategories || [];
-
-         // 2. ELIGIBILITY LOCK: Strict Education Level Blocking
+         
          if (userEdu === 'High School') {
-             // High schoolers CANNOT see Grad/PhD/Undergrad-only
-             if (opLevels.includes('Graduate') || opLevels.includes('PhD') || opLevels.includes('Undergraduate')) {
-                 // But check if it ALSO includes High School or All
-                 if (!opLevels.includes('High School') && !opLevels.includes('All')) return false;
-             }
+             // Block Graduate/PhD content strictly
+             if (opLevels.some(l => ['Graduate', 'PhD', 'Undergraduate'].includes(l)) && !opLevels.includes('High School') && !opLevels.includes('All')) return false;
          } else if (userEdu === 'Undergraduate') {
-             // Undergrads cannot see PhD or Graduate only
              if (opLevels.includes('PhD')) return false;
-             if (opLevels.includes('Graduate') && !opLevels.includes('Undergraduate')) return false;
          }
 
-         // 3. CATEGORY LOCK: If no search query, STRICTLY show preferred categories
-         if (filters.category === 'All' && !filters.searchQuery && userCats.length > 0) {
-             if (!userCats.includes(opCats)) return false;
+         // 3. Strict Interest Filter (If not searching)
+         if (filters.category === 'All' && !filters.searchQuery) {
+             const userCats = user.targetCategories || [];
+             const userInterests = user.interests || [];
+             
+             // If opportunity category matches user target categories -> SHOW
+             const catMatch = userCats.includes(op.category);
+             // If tags match user interests -> SHOW
+             const tagMatch = op.tags.some(tag => userInterests.includes(tag));
+             // If title or description loosely matches interests -> SHOW
+             const contentMatch = userInterests.some(i => op.title.includes(i) || op.description.includes(i));
+
+             if (userCats.length > 0 && !catMatch && !tagMatch && !contentMatch) return false;
          }
       }
 
@@ -211,95 +223,61 @@ const App: React.FC = () => {
       }
       
       if (filters.category !== 'All' && op.category !== filters.category) return false;
-      
       return true;
   });
 
   const handleUserSubmission = {
-      op: (op: Partial<Opportunity>) => {
-          setOpportunities(prev => [{
-             ...op,
-             id: Math.random().toString(),
-             postedAt: 'Just now',
-             tags: [],
-             requirements: [],
-             cost: 'Free',
-             regionScope: 'Cameroon',
-             location: 'Remote',
-             deadline: 'TBD',
-             isOnline: true,
-             targetEducationLevels: [],
-             eligibility: '',
-             benefits: '',
-             organization: user?.name || 'Community Member',
-             title: op.title || 'Untitled',
-             category: 'Job',
-             description: op.description || '',
-             applicationLink: op.applicationLink || '#',
-             status: 'pending',
-             authorRole: 'User'
-          } as Opportunity, ...prev]);
+      op: (op: Partial<Opportunity>) => { 
+          setOpportunities(prev => [{ ...op, id: Math.random().toString(), postedAt: 'Just now', tags: [], requirements: [], cost: 'Free', regionScope: 'Cameroon', location: 'Remote', deadline: 'TBD', isOnline: true, targetEducationLevels: [], eligibility: '', benefits: '', organization: user?.name || 'Community Member', title: op.title || 'Untitled', category: 'Job', description: op.description || '', applicationLink: op.applicationLink || '#', status: 'pending', authorRole: 'User' } as Opportunity, ...prev]); 
+          addNotification('success', 'Submitted for review');
       },
-      story: (story: Partial<SuccessStory>) => {
-          setStories(prev => [{
-              ...story,
-              id: Math.random().toString(),
-              authorName: user?.name || 'Anonymous',
-              status: 'pending',
-              title: story.title || '',
-              content: story.content || '',
-              date: new Date().toISOString()
-          } as SuccessStory, ...prev]);
+      story: (story: Partial<SuccessStory>) => { 
+          setStories(prev => [{ ...story, id: Math.random().toString(), authorName: user?.name || 'Anonymous', status: 'pending', title: story.title || '', content: story.content || '', date: new Date().toISOString() } as SuccessStory, ...prev]); 
+          addNotification('success', 'Story submitted!');
       },
-      mentor: (app: Partial<MentorApplication>) => {
-          if (user) {
-              setMentorApps(prev => [{
-                  id: Math.random().toString(),
-                  userId: user.id,
-                  name: user.name,
-                  email: user.email,
-                  status: 'pending',
-                  date: new Date().toISOString().split('T')[0],
-                  profession: app.profession || '',
-                  bio: app.bio || '',
-                  expertise: app.expertise || []
-              } as MentorApplication, ...prev]);
-          }
+      mentor: (app: Partial<MentorApplication>) => { 
+          if (user) setMentorApps(prev => [{ id: Math.random().toString(), userId: user.id, name: user.name, email: user.email, status: 'pending', date: new Date().toISOString().split('T')[0], profession: app.profession || '', bio: app.bio || '', expertise: app.expertise || [] } as MentorApplication, ...prev]); 
+          addNotification('success', 'Application sent!');
       }
+  };
+
+  const handleCommunityRequest = () => {
+      addNotification('info', 'Admin Notified of Request');
   };
 
   if (!user) return <AuthScreen onLogin={(u) => setUser(u)} />;
   if (currentView === 'media-feed') return <MediaFeed opportunities={opportunities} onBack={() => setCurrentView('feed')} />;
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-beige-50 dark:bg-charcoal-900 transition-colors duration-300 overflow-hidden relative" style={{ overscrollBehaviorY: 'none' }}>
+    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-beige-50 dark:bg-charcoal-900 transition-colors duration-300 overflow-hidden relative">
       <VoiceAssistant user={user} opportunities={opportunities} mentorApps={mentorApps} onBookmark={toggleBookmark} language={language} setDarkMode={setDarkMode} onPostOpportunity={handleCreateOpportunity} onReviewMentorApp={handleMentorReview}/>
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)} />}
       
-      {selectedOpForHelp && (
-          <ApplicationHelper user={user} opportunity={selectedOpForHelp} onClose={() => setSelectedOpForHelp(null)} />
-      )}
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2">
+          {notifications.map(n => (
+              <div key={n.id} className={`p-4 rounded-xl shadow-xl text-sm font-bold text-white animate-fadeIn flex items-center gap-3 ${n.type === 'success' ? 'bg-green-500' : n.type === 'error' ? 'bg-red-500' : 'bg-charcoal-800 border border-golden-500'}`}>
+                  {n.type === 'success' && <div className="w-2 h-2 rounded-full bg-white"/>}
+                  {n.message}
+              </div>
+          ))}
+      </div>
 
-      {/* Mobile Header */}
+      {selectedOpForHelp && ( <ApplicationHelper user={user} opportunity={selectedOpForHelp} onClose={() => setSelectedOpForHelp(null)} /> )}
+
       <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-charcoal-800 border-b border-gray-200 dark:border-charcoal-700 shrink-0 z-30">
-        <button onClick={() => setCurrentView('feed')} className="text-xl font-bold tracking-tight text-charcoal-900 dark:text-white flex items-center gap-2">
-            <img src={APP_LOGO} alt="Logo" className="w-8 h-8 object-contain" />
-            <span>LaunchPad<span className="text-golden-500">.</span></span>
-        </button>
+        <button onClick={() => setCurrentView('feed')} className="text-xl font-bold tracking-tight text-charcoal-900 dark:text-white flex items-center gap-2"><span>LaunchPad<span className="text-golden-500">.</span></span></button>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-gray-600 dark:text-gray-300">{isSidebarOpen ? <X /> : <Menu />}</button>
       </div>
 
-      {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-charcoal-800 border-r border-gray-200 dark:border-charcoal-700 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static h-full flex flex-col shadow-lg md:shadow-none shrink-0`}>
         <div className="p-6 hidden md:block border-b border-gray-100 dark:border-charcoal-700">
-          <button onClick={() => setCurrentView('feed')} className="flex items-center gap-3 text-2xl font-bold tracking-tight text-charcoal-900 dark:text-white block text-left">
-             <img src={APP_LOGO} alt="Logo" className="w-10 h-10 object-contain" />
-             <span>LaunchPad<span className="text-golden-500">.</span></span>
-          </button>
+          <button onClick={() => setCurrentView('feed')} className="flex items-center gap-3 text-2xl font-bold tracking-tight text-charcoal-900 dark:text-white block text-left"><span>LaunchPad<span className="text-golden-500">.</span></span></button>
           <p className="text-xs text-coral-500 font-medium mt-1 uppercase tracking-wide">Cameroon Edition</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto no-scrollbar">
+          
           <NavButton active={currentView === 'dashboard'} onClick={() => { setCurrentView('dashboard'); setIsSidebarOpen(false); }} icon={<PieChart size={18} />} label={t.dashboard} />
           <NavButton active={currentView === 'feed'} onClick={() => { setCurrentView('feed'); setIsSidebarOpen(false); }} icon={<Home size={18} />} label={t.feed} />
           <NavButton active={false} onClick={() => { setCurrentView('media-feed'); setIsSidebarOpen(false); }} icon={<PlaySquare size={18} />} label={t.watch} />
@@ -325,7 +303,7 @@ const App: React.FC = () => {
 
         <div className="p-4 border-t border-gray-200 dark:border-charcoal-700 bg-beige-50 dark:bg-charcoal-900/50 shrink-0">
            <button onClick={() => { setCurrentView('profile'); setIsSidebarOpen(false); }} className="flex items-center gap-3 mb-4 px-2 w-full hover:bg-white dark:hover:bg-charcoal-800 p-2 rounded-lg transition-all group">
-             {user.image ? <img src={user.image} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-charcoal-800 shadow-md group-hover:scale-105 transition-transform" /> : <div className="w-9 h-9 rounded-full bg-golden-500 flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white dark:border-charcoal-800 group-hover:scale-105 transition-transform">{user.name.charAt(0)}</div>}
+             {user.image ? <img src={user.image} alt={user.name} className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-charcoal-800 shadow-md" /> : <div className="w-9 h-9 rounded-full bg-golden-500 flex items-center justify-center text-white font-bold text-sm shadow-md border-2 border-white">{user.name.charAt(0)}</div>}
               <div className="flex-1 min-w-0 text-left"><p className="text-sm font-bold text-charcoal-900 dark:text-white truncate group-hover:text-golden-600 transition-colors">{user.name}</p><p className="text-xs text-gray-500 truncate">{user.role}</p></div>
            </button>
            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-coral-600 hover:bg-coral-50 dark:hover:bg-charcoal-800 rounded-lg transition-colors"><LogOut size={14} /> {t.signOut}</button>
@@ -343,9 +321,7 @@ const App: React.FC = () => {
                 <div className="relative group">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-charcoal-700 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-200 transition-colors">
                         <Languages size={14} /> 
-                        <select value={language} onChange={(e) => { const newLang = e.target.value as Language; setLanguage(newLang); handleUpdateProfile({ language: newLang }); }} className="bg-transparent outline-none appearance-none cursor-pointer w-full uppercase">
-                            <option value="en">EN</option><option value="fr">FR</option><option value="pidgin">PID</option><option value="de">DE</option><option value="zh">ZH</option><option value="es">ES</option>
-                        </select>
+                        <select value={language} onChange={(e) => { const newLang = e.target.value as Language; setLanguage(newLang); handleUpdateProfile({ language: newLang }); }} className="bg-transparent outline-none appearance-none cursor-pointer w-full uppercase"><option value="en">EN</option><option value="fr">FR</option><option value="pidgin">PID</option><option value="de">DE</option><option value="zh">ZH</option><option value="es">ES</option></select>
                     </div>
                 </div>
                 <button onClick={() => setAiMode(!aiMode)} className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${aiMode ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white' : 'bg-gray-100 dark:bg-charcoal-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}><Sparkles size={14} className={aiMode ? 'animate-pulse' : ''} /><span className="hidden sm:inline">{aiMode ? t.aiOn : t.aiOff}</span></button>
@@ -354,32 +330,30 @@ const App: React.FC = () => {
             </header>
         )}
 
-        <div className={`flex-1 overflow-y-auto no-scrollbar bg-beige-50 dark:bg-charcoal-900 touch-pan-y ${currentView !== 'labs' ? 'p-4 md:p-8 pb-24 md:pb-8' : ''}`}>
-          
+        <div 
+            ref={contentRef}
+            onScroll={handleScroll}
+            className={`flex-1 overflow-y-auto no-scrollbar bg-beige-50 dark:bg-charcoal-900 touch-pan-y ${currentView !== 'labs' ? 'p-4 md:p-8 pb-24 md:pb-8' : ''}`}
+        >
           {currentView === 'dashboard' && <Dashboard user={user} />}
-          {currentView === 'community' && <CommunityHub user={user} joinedCommunities={user.joinedCommunityIds} onJoin={handleJoinCommunity} />}
+          {currentView === 'community' && <CommunityHub user={user} joinedCommunities={user.joinedCommunityIds} onJoin={handleJoinCommunity} onRequest={handleCommunityRequest}/>}
           {currentView === 'groups' && <GroupsHub />}
           {currentView === 'labs' && <LaunchPadLabs user={user} />}
-          
           {currentView === 'feed' && (
             <div className="max-w-4xl mx-auto animate-fadeIn">
                <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
-                 {CATEGORIES.map(cat => (
-                   <button key={cat} onClick={() => setFilters(prev => ({ ...prev, category: cat as Category | 'All' }))} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm ${filters.category === cat ? 'bg-golden-500 text-white transform scale-105' : 'bg-white dark:bg-charcoal-800 text-gray-600 dark:text-gray-300 hover:bg-golden-50 dark:hover:bg-charcoal-700 border border-transparent hover:border-golden-200'}`}>{cat}</button>
-                 ))}
+                 {CATEGORIES.map(cat => <button key={cat} onClick={() => setFilters(prev => ({ ...prev, category: cat as Category | 'All' }))} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm ${filters.category === cat ? 'bg-golden-500 text-white transform scale-105' : 'bg-white dark:bg-charcoal-800 text-gray-600 dark:text-gray-300 hover:bg-golden-50 dark:hover:bg-charcoal-700 border border-transparent hover:border-golden-200'}`}>{cat}</button>)}
                </div>
                {stories.length > 0 && (
                    <div className="mb-8">
                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2"><Star size={12} className="text-golden-500"/> {t.successStories}</h3>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           {stories.filter(s => s.status === 'approved').slice(0, 2).map(s => (<div key={s.id} className="bg-white dark:bg-charcoal-800 p-4 rounded-xl border-l-4 border-violet-500 shadow-sm hover:shadow-md transition-shadow"><p className="text-sm font-bold text-gray-900 dark:text-white mb-1">"{s.title}"</p><p className="text-xs text-violet-600 dark:text-violet-400 font-medium">- {s.authorName}</p></div>))}
-                       </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{stories.filter(s => s.status === 'approved').slice(0, 2).map(s => (<div key={s.id} className="bg-white dark:bg-charcoal-800 p-4 rounded-xl border-l-4 border-violet-500 shadow-sm hover:shadow-md transition-shadow"><p className="text-sm font-bold text-gray-900 dark:text-white mb-1">"{s.title}"</p><p className="text-xs text-violet-600 dark:text-violet-400 font-medium">- {s.authorName}</p></div>))}</div>
                    </div>
                )}
                {isLoading ? ( <div className="text-center py-20 animate-pulse flex flex-col items-center"><Sparkles className="text-golden-500 mb-2 animate-spin" size={32}/><p className="text-gray-500 font-medium">Curating opportunities...</p></div> ) : displayedOpportunities.length > 0 ? ( <> {displayedOpportunities.map((op, index) => (<React.Fragment key={op.id}><OpportunityCard data={op} onBookmark={toggleBookmark} isAdmin={user.role === 'Admin'} onDelete={handleDeleteOpportunity} onEdit={handleEditOpportunity} onHelpApply={setSelectedOpForHelp} /> {index === 1 && <div className="bg-gradient-to-r from-charcoal-900 to-charcoal-800 rounded-xl p-6 mb-6 text-white shadow-lg border border-charcoal-700"><div className="flex justify-between items-center mb-4"><h3 className="font-bold flex items-center gap-2 text-golden-400"><Sparkles size={18} fill="currentColor"/> {t.verifiedMentors}</h3><button onClick={() => setCurrentView('mentorship')} className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full hover:bg-white/20 transition-colors">{t.viewAll}</button></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-4">{mentors.slice(0, 3).map(m => (<div key={m.id} className="bg-white/5 p-3 rounded-lg backdrop-blur-sm hover:bg-white/10 transition-colors border border-white/5"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-violet-500 flex items-center justify-center text-sm font-bold shadow-md">{m.name.charAt(0)}</div><div className="min-w-0"><p className="text-xs font-bold text-white truncate">{m.name}</p><p className="text-[10px] text-gray-300 truncate">{m.currentRole}</p></div></div></div>))}</div></div>}</React.Fragment>))} </> ) : ( <div className="text-center py-20"><p className="text-gray-500 font-medium text-lg">{t.noOpportunities}</p>{user.city && <p className="text-sm text-gray-400 mt-2">{t.tryAdjusting} '{user.city}' or clearing filters.</p>}<button onClick={() => { setFilters({category: 'All', searchQuery: '', targetRegion: ''}); }} className="mt-4 px-4 py-2 bg-golden-500 text-white rounded-full text-sm font-bold">Clear Filters</button></div> )}
+               {isInfiniteLoading && <div className="text-center py-4"><Sparkles className="text-golden-500 animate-spin mx-auto"/> <p className="text-xs text-gray-500 mt-1">Finding more opportunities...</p></div>}
             </div>
           )}
-
           {currentView === 'admin' && user.role === 'Admin' && <AdminDashboard opportunities={opportunities} setOpportunities={setOpportunities} stories={stories} setStories={setStories} mentors={mentors} setMentors={setMentors} mentorApps={mentorApps} onReviewMentorApp={handleMentorReview} />}
           {currentView === 'mentor-dashboard' && (user.role === 'Mentor' || user.role === 'Admin') && <MentorDashboard user={user} />}
           {currentView === 'mentorship' && <MentorshipHub mentors={mentors} onBecomeMentorClick={() => setCurrentView('submit')} userRole={user.role} />}

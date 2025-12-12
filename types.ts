@@ -20,9 +20,18 @@ export type Language = 'en' | 'fr' | 'pidgin' | 'de' | 'zh' | 'es';
 
 export type AIVoice = 'Kore' | 'Puck' | 'Fenrir' | 'Charon' | 'Aoede';
 
-export type LabsType = 'Code' | 'Design' | 'Eng' | 'Writer' | 'Audio' | 'Artist';
+// Added new specialized labs
+export type LabsType = 'Code' | 'Design' | 'Eng' | 'Writer' | 'Audio' | 'Artist' | 'Health' | 'Science' | 'Film' | 'Music';
 
 // --- Ecosystem Types ---
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
 
 export interface UserStats {
   xp: number;
@@ -44,8 +53,9 @@ export interface Community {
   tags: string[];
   category: 'Tech' | 'Art' | 'STEM' | 'Business' | 'General';
   educationLevel: 'High School' | 'Undergraduate' | 'Graduate' | 'All';
-  isVerified?: boolean; // For "Authentic Communities" like GDG
+  isVerified?: boolean; 
   image?: string;
+  type: 'Public' | 'Private';
 }
 
 export interface CommunityProblem {

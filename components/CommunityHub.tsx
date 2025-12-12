@@ -1,20 +1,22 @@
 
 import React, { useState } from 'react';
-import { UserProfile, Community, CommunityProblem } from '../types';
+import { UserProfile, Community } from '../types';
 import { MOCK_COMMUNITIES, MOCK_PROBLEMS } from '../constants';
-import { Search, Users, Shield, ArrowRight, MessageSquare, Video, HelpCircle, Plus, Image as ImageIcon, CheckCircle, Brain, Filter, Lock } from 'lucide-react';
+import { Search, Users, Shield, ArrowRight, MessageSquare, Video, HelpCircle, Plus, Image as ImageIcon, CheckCircle, Brain, Filter, Lock, Clock } from 'lucide-react';
 
 interface Props {
   user: UserProfile;
   joinedCommunities?: string[];
   onJoin?: (id: string) => void;
+  onRequest?: (id: string) => void;
 }
 
-const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin }) => {
+const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin, onRequest }) => {
   const [view, setView] = useState<'discovery' | 'detail'>('discovery');
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
   const [activeTab, setActiveTab] = useState<'problems' | 'chat' | 'spaces' | 'live' | 'members'>('problems');
   const [showPostModal, setShowPostModal] = useState(false);
+  const [requestedCommunities, setRequestedCommunities] = useState<string[]>([]);
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -33,7 +35,15 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
 
   const handleJoin = (c: Community, e: React.MouseEvent) => {
       e.stopPropagation();
-      if (onJoin) onJoin(c.id);
+      if (c.type === 'Private') {
+          if (!requestedCommunities.includes(c.id)) {
+              setRequestedCommunities([...requestedCommunities, c.id]);
+              if (onRequest) onRequest(c.id);
+          }
+      } else {
+          // Public community
+          if (onJoin) onJoin(c.id);
+      }
   };
 
   const handlePostProblem = (e: React.FormEvent) => {
@@ -86,13 +96,17 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.map(c => {
                   const alreadyJoined = joinedCommunities.includes(c.id);
+                  const isRequested = requestedCommunities.includes(c.id);
                   return (
                   <div key={c.id} onClick={() => handleCommunityClick(c)} className="bg-white dark:bg-charcoal-800 rounded-2xl p-6 border border-gray-100 dark:border-charcoal-700 shadow-sm hover:shadow-lg transition-all group cursor-pointer">
                       <div className="flex justify-between items-start mb-4">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-md ${c.category === 'Tech' ? 'bg-blue-500' : c.category === 'Art' ? 'bg-pink-500' : 'bg-green-500'}`}>
                               {c.image}
                           </div>
-                          {c.isVerified && <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 p-1 rounded-full"><Shield size={16} fill="currentColor"/></div>}
+                          <div className="flex gap-2">
+                              {c.type === 'Private' && <div className="bg-gray-100 dark:bg-charcoal-900 text-gray-500 p-1.5 rounded-full"><Lock size={14}/></div>}
+                              {c.isVerified && <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 p-1.5 rounded-full"><Shield size={14} fill="currentColor"/></div>}
+                          </div>
                       </div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-golden-500 transition-colors">{c.name}</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 min-h-[40px]">{c.description}</p>
@@ -109,9 +123,11 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
                           </div>
                           {alreadyJoined ? (
                               <span className="text-sm font-bold text-green-500 flex items-center gap-1"><CheckCircle size={14}/> Member</span>
+                          ) : isRequested ? (
+                              <span className="text-sm font-bold text-yellow-500 flex items-center gap-1"><Clock size={14}/> Requested</span>
                           ) : (
                               <button onClick={(e) => handleJoin(c, e)} className="text-sm font-bold text-golden-600 hover:underline flex items-center gap-1">
-                                  Join <ArrowRight size={14}/>
+                                  {c.type === 'Private' ? 'Request to Join' : 'Join'} <ArrowRight size={14}/>
                               </button>
                           )}
                       </div>
@@ -123,6 +139,7 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
 
   const renderDetail = () => {
       if (!selectedCommunity) return null;
+      const isRequested = requestedCommunities.includes(selectedCommunity.id);
 
       return (
           <div className="h-full flex flex-col bg-white dark:bg-charcoal-900">
@@ -142,13 +159,19 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
                               <p className="text-gray-500 text-sm font-medium">{selectedCommunity.memberCount} members • {selectedCommunity.activityLevel}</p>
                           </div>
                       </div>
-                      <button 
-                        onClick={(e) => handleJoin(selectedCommunity, e as any)} 
-                        disabled={isMember}
-                        className={`px-6 py-2 rounded-full font-bold text-sm shadow-lg transition-all ${isMember ? 'bg-charcoal-200 text-charcoal-600 dark:bg-charcoal-700 dark:text-gray-400' : 'bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 hover:opacity-90'}`}
-                      >
-                          {isMember ? 'Member' : 'Join Community'}
-                      </button>
+                      
+                      {isMember ? (
+                          <button disabled className="px-6 py-2 rounded-full font-bold text-sm bg-gray-200 text-gray-500 cursor-default">Member</button>
+                      ) : isRequested ? (
+                          <button disabled className="px-6 py-2 rounded-full font-bold text-sm bg-yellow-100 text-yellow-700 cursor-default">Request Pending</button>
+                      ) : (
+                          <button 
+                            onClick={(e) => handleJoin(selectedCommunity, e as any)} 
+                            className="px-6 py-2 rounded-full font-bold text-sm shadow-lg transition-all bg-charcoal-900 dark:bg-white text-white dark:text-charcoal-900 hover:opacity-90"
+                          >
+                              {selectedCommunity.type === 'Private' ? 'Request to Join' : 'Join Community'}
+                          </button>
+                      )}
                   </div>
                   
                   {/* Tabs */}
@@ -175,11 +198,13 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
               <div className="flex-1 overflow-y-auto p-6 bg-beige-50 dark:bg-charcoal-900 relative">
                   {!isMember && activeTab !== 'problems' && (
                       <div className="absolute inset-0 z-10 bg-white/60 dark:bg-charcoal-900/60 backdrop-blur-sm flex items-center justify-center">
-                          <div className="text-center p-6 bg-white dark:bg-charcoal-800 rounded-2xl shadow-xl max-w-sm">
+                          <div className="text-center p-6 bg-white dark:bg-charcoal-800 rounded-2xl shadow-xl max-w-sm border border-gray-100 dark:border-charcoal-700">
                               <Lock size={48} className="mx-auto text-gray-400 mb-4"/>
                               <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">Members Only</h3>
                               <p className="text-gray-500 mb-4">Join {selectedCommunity.name} to access chat, live sessions, and member list.</p>
-                              <button onClick={(e) => handleJoin(selectedCommunity, e as any)} className="bg-golden-500 text-white px-6 py-2 rounded-lg font-bold">Join Now</button>
+                              <button onClick={(e) => handleJoin(selectedCommunity, e as any)} className="bg-golden-500 text-white px-6 py-2 rounded-lg font-bold">
+                                  {selectedCommunity.type === 'Private' ? 'Request Access' : 'Join Now'}
+                              </button>
                           </div>
                       </div>
                   )}
@@ -219,6 +244,7 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
                       </div>
                   )}
 
+                  {/* Other tabs remain similar but behind the lock if not member */}
                   {activeTab === 'chat' && (
                       <div className="space-y-4">
                           <div className="flex gap-4">
@@ -228,35 +254,6 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
                                   <p className="text-sm text-gray-700 dark:text-gray-300">Hey guys, anyone joining the Code Fest?</p>
                               </div>
                           </div>
-                          <div className="flex gap-4 flex-row-reverse">
-                              <div className="w-8 h-8 rounded-full bg-purple-500 flex-shrink-0"></div>
-                              <div className="bg-golden-50 dark:bg-golden-900/20 p-3 rounded-l-xl rounded-br-xl shadow-sm max-w-md">
-                                  <p className="text-sm font-bold text-purple-500 mb-1">You</p>
-                                  <p className="text-sm text-gray-700 dark:text-gray-300">Yeah! I'm looking for a team.</p>
-                              </div>
-                          </div>
-                      </div>
-                  )}
-
-                  {activeTab === 'spaces' && (
-                      <div className="grid grid-cols-2 gap-4">
-                          {['General', 'Announcements', 'Projects', 'Random'].map(s => (
-                              <div key={s} className="bg-white dark:bg-charcoal-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-charcoal-700 hover:border-golden-500 cursor-pointer">
-                                  <h4 className="font-bold text-gray-900 dark:text-white"># {s}</h4>
-                                  <p className="text-xs text-gray-500 mt-1">Active 2m ago</p>
-                              </div>
-                          ))}
-                      </div>
-                  )}
-                  
-                  {activeTab === 'members' && (
-                      <div className="space-y-2">
-                          {[1,2,3,4,5].map(i => (
-                              <div key={i} className="flex items-center gap-3 p-3 bg-white dark:bg-charcoal-800 rounded-lg shadow-sm">
-                                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-charcoal-600"></div>
-                                  <div className="font-bold text-sm text-gray-700 dark:text-gray-200">Member {i}</div>
-                              </div>
-                          ))}
                       </div>
                   )}
               </div>
@@ -267,8 +264,6 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
   return (
     <>
         {view === 'discovery' ? renderDiscovery() : renderDetail()}
-        
-        {/* Post Problem Modal */}
         {showPostModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <div className="bg-white dark:bg-charcoal-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl border border-gray-200 dark:border-charcoal-700">
@@ -283,14 +278,6 @@ const CommunityHub: React.FC<Props> = ({ user, joinedCommunities = [], onJoin })
                             <button type="button" className="absolute bottom-3 right-3 p-2 bg-violet-100 text-violet-600 rounded-full hover:bg-violet-200" title="AI: Convert Image to LaTeX">
                                 <Brain size={16}/>
                             </button>
-                        </div>
-                        <div className="flex gap-4">
-                             <select className="flex-1 p-3 bg-gray-50 dark:bg-charcoal-900 rounded-lg outline-none text-sm font-bold dark:text-white">
-                                 <option>Easy</option><option>Medium</option><option>Hard</option>
-                             </select>
-                             <button type="button" className="flex-1 flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-charcoal-900 rounded-lg text-sm font-bold text-gray-500 border border-dashed border-gray-300">
-                                 <ImageIcon size={16}/> Add Image
-                             </button>
                         </div>
                         <button type="submit" className="w-full bg-golden-500 text-white font-bold py-3 rounded-lg hover:bg-golden-600 transition-colors shadow-lg">Post Problem</button>
                     </form>

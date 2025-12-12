@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Opportunity } from '../types';
-import { Play, ArrowLeft, Heart, Share2, Info, X, Bookmark } from 'lucide-react';
+import { Play, ArrowLeft, Heart, Share2, Info, X, Bookmark, Volume2, VolumeX } from 'lucide-react';
 
 interface Props {
     opportunities: Opportunity[];
@@ -9,21 +9,35 @@ interface Props {
 }
 
 const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
-    // Filter strictly for valid media
-    const [failedMediaIds, setFailedMediaIds] = useState<Set<string>>(new Set());
+    // Only videos
+    const [mediaItems, setMediaItems] = useState<Opportunity[]>(
+        opportunities.filter(op => op.mediaUrl && op.mediaType === 'video')
+    );
     const [liked, setLiked] = useState<Set<string>>(new Set());
     const [saved, setSaved] = useState<Set<string>>(new Set());
     const [activeMore, setActiveMore] = useState<Opportunity | null>(null);
+    const [isMuted, setIsMuted] = useState(true);
+    
+    // Infinite Scroll Ref
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastElementRef = useRef<HTMLDivElement | null>(null);
 
-    const mediaOpportunities = opportunities.filter(op => 
-        op.mediaUrl && 
-        (op.mediaType === 'video' || op.mediaType === 'image') &&
-        !failedMediaIds.has(op.id)
-    );
-
-    const handleMediaError = (id: string) => {
-        setFailedMediaIds(prev => new Set(prev).add(id));
+    // Load More Mock Logic
+    const loadMoreVideos = () => {
+        // In real app, fetch more. Here we duplicate existing for demo of infinite scroll
+        const more = mediaItems.slice(0, 3).map(op => ({...op, id: `dup-${Date.now()}-${op.id}`}));
+        setMediaItems(prev => [...prev, ...more]);
     };
+
+    useEffect(() => {
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                loadMoreVideos();
+            }
+        });
+        if (lastElementRef.current) observer.current.observe(lastElementRef.current);
+    }, [mediaItems]);
 
     const handleLike = (id: string) => {
         const newLiked = new Set(liked);
@@ -37,7 +51,6 @@ const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
         if (newSaved.has(id)) newSaved.delete(id);
         else newSaved.add(id);
         setSaved(newSaved);
-        alert(newSaved.has(id) ? "Bookmarked!" : "Removed from bookmarks.");
     };
 
     const handleShare = (op: Opportunity) => {
@@ -53,42 +66,42 @@ const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black text-white overflow-y-scroll snap-y snap-mandatory h-full w-full">
+        <div className="fixed inset-0 z-[60] bg-black text-white overflow-y-scroll snap-y snap-mandatory h-full w-full no-scrollbar">
             <button 
                 onClick={onBack}
                 className="fixed top-4 left-4 z-50 p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors"
             >
                 <ArrowLeft size={24} />
             </button>
+            
+            <button 
+                onClick={() => setIsMuted(!isMuted)}
+                className="fixed top-4 right-4 z-50 p-3 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition-colors"
+            >
+                {isMuted ? <VolumeX size={24}/> : <Volume2 size={24}/>}
+            </button>
 
-            {mediaOpportunities.length === 0 ? (
+            {mediaItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full">
-                    <p className="text-gray-400">No media content available yet.</p>
+                    <p className="text-gray-400">No video content available yet.</p>
                     <button onClick={onBack} className="mt-4 text-golden-500 font-bold">Go Back</button>
                 </div>
             ) : (
-                mediaOpportunities.map(op => (
-                    <div key={op.id} className="h-screen w-full snap-start relative flex items-center justify-center bg-charcoal-900">
-                        {op.mediaType === 'video' && op.mediaUrl ? (
-                            <video 
-                                src={op.mediaUrl} 
-                                className="w-full h-full object-contain md:max-w-md mx-auto"
-                                controls
-                                loop
-                                autoPlay
-                                playsInline
-                                muted // Auto-play usually requires muted initially
-                                crossOrigin="anonymous"
-                                onError={() => handleMediaError(op.id)}
-                            />
-                        ) : (
-                            <img 
-                                src={op.mediaUrl} 
-                                alt={op.title} 
-                                className="w-full h-full object-contain md:max-w-md mx-auto" 
-                                onError={() => handleMediaError(op.id)}
-                            />
-                        )}
+                mediaItems.map((op, index) => (
+                    <div 
+                        key={op.id} 
+                        ref={index === mediaItems.length - 1 ? lastElementRef : null}
+                        className="h-full w-full snap-start relative flex items-center justify-center bg-charcoal-900"
+                    >
+                        <video 
+                            src={op.mediaUrl} 
+                            className="w-full h-full object-cover md:max-w-md mx-auto"
+                            loop
+                            autoPlay
+                            playsInline
+                            muted={isMuted}
+                            crossOrigin="anonymous"
+                        />
 
                         {/* Overlay Info */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/60 to-transparent p-6 pb-12 pt-20">
@@ -99,7 +112,6 @@ const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
                                 
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        {op.logo && <img src={op.logo} className="w-8 h-8 rounded-full bg-white"/>}
                                         <span className="font-bold text-sm">{op.organization}</span>
                                     </div>
                                     <a 
@@ -113,7 +125,7 @@ const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
                             </div>
                         </div>
 
-                        {/* Side Actions (Reels Style) */}
+                        {/* Side Actions */}
                         <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-20">
                             <div className="flex flex-col items-center gap-1">
                                 <button onClick={() => handleSave(op.id)} className={`p-3 backdrop-blur-sm rounded-full cursor-pointer hover:bg-white/20 ${saved.has(op.id) ? 'bg-golden-500 text-black' : 'bg-black/40 text-white'}`}>
@@ -144,7 +156,7 @@ const MediaFeed: React.FC<Props> = ({ opportunities, onBack }) => {
                 ))
             )}
 
-            {/* Slide-up Info Panel - Fixed Positioning */}
+            {/* Slide-up Info Panel */}
             {activeMore && (
                 <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-end animate-fadeIn">
                     <div className="bg-white dark:bg-charcoal-800 w-full rounded-t-3xl p-6 h-[70vh] overflow-y-auto relative animate-slideUp border-t border-gray-200 dark:border-charcoal-700 shadow-2xl">

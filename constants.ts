@@ -1,11 +1,23 @@
 
 import { Opportunity, UserProfile, SuccessStory, Partner, LearningResource, Community, Group, UserStats, CommunityProblem } from './types';
 
-// Using reliable public URLs for preview environment
-export const APP_LOGO = "https://cdn-icons-png.flaticon.com/512/2585/2585188.png";
-export const APP_WALLPAPER = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop";
+// Removed external images
+export const APP_LOGO = "";
+export const APP_WALLPAPER = "";
 
-// Translation Dictionary (Truncated for brevity, assuming existing is kept)
+// 30+ Diverse Interests
+export const ALL_INTERESTS = [
+    'Technology', 'Software Engineering', 'Data Science', 'AI', 'Robotics', 'Cybersecurity', 
+    'Business', 'Finance', 'Marketing', 'Entrepreneurship', 'Accounting', 
+    'Arts', 'Graphic Design', 'Fine Art', 'Fashion', 'Music', 'Film', 'Photography', 'Animation',
+    'Science', 'Biology', 'Chemistry', 'Physics', 'Environmental Science', 
+    'Health', 'Medicine', 'Nursing', 'Public Health', 'Pharmacy', 
+    'Agriculture', 'AgriTech', 
+    'Engineering', 'Civil Eng', 'Mechanical Eng', 'Electrical Eng', 
+    'Education', 'Law', 'Media', 'Journalism', 
+    'Sports', 'Esports', 'Writing', 'History', 'Politics'
+];
+
 export const TRANSLATIONS = {
   en: {
     welcome: "Guiding Youths Into Opportunity",
@@ -26,7 +38,6 @@ export const TRANSLATIONS = {
     searchPlaceholder: "Search opportunities...",
     aiOn: "AI Active",
     aiOff: "Enable AI",
-    // New Translations
     dashboard: "Dashboard",
     community: "Community Hub",
     teams: "Groups & Teams",
@@ -37,7 +48,6 @@ export const TRANSLATIONS = {
     noOpportunities: "No opportunities found.",
     tryAdjusting: "Try adjusting your search or check back later for posts in"
   },
-  // ... other languages (keeping existing logic)
   fr: { dashboard: "Tableau de Bord", community: "Communauté", teams: "Équipes", labs: "Labos" },
   pidgin: { dashboard: "Ma Corner", community: "Meeting Place", teams: "Ma Gees", labs: "Work Place" },
   de: { dashboard: "Armaturenbrett", community: "Gemeinschaft", teams: "Teams", labs: "Labore" },
@@ -45,9 +55,7 @@ export const TRANSLATIONS = {
   es: { dashboard: "Tablero", community: "Comunidad", teams: "Equipos", labs: "Laboratorios" }
 } as any;
 
-export const CONTENT_TRANSLATIONS = {
-    // ... existing content translations
-} as any;
+export const CONTENT_TRANSLATIONS = {} as any;
 
 export const ADMIN_CREDENTIALS = [
   { email: 'azilmuluh@gmail.com', pass: '119402008', name: 'Muluh Azinwi Success' },
@@ -59,8 +67,6 @@ export const ADMIN_CREDENTIALS = [
 export const MENTOR_CREDENTIALS = [
   { email: 'azinwindahi@gmail.com', pass: '119402008', name: 'Muluh Ndahi' }
 ];
-
-// Ecosystem Mock Data
 
 export const MOCK_USER_STATS: UserStats = {
     xp: 2450,
@@ -84,23 +90,27 @@ export const MOCK_USER_STATS: UserStats = {
 export const MOCK_COMMUNITIES: Community[] = [
     {
         id: 'c1', name: 'Silicon Mountain Devs', description: 'The heartbeat of Cameroon tech. Discuss code, startups, and events.',
-        memberCount: 1240, activityLevel: 'Very Active', tags: ['Tech', 'Coding', 'Cameroon'], category: 'Tech', educationLevel: 'All', isVerified: true, image: 'SM'
+        memberCount: 1240, activityLevel: 'Very Active', tags: ['Tech', 'Coding', 'Cameroon'], category: 'Tech', educationLevel: 'All', isVerified: true, image: 'SM', type: 'Public'
     },
     {
         id: 'c2', name: 'GDG Yaoundé', description: 'Google Developer Group Yaoundé. Android, Web, Cloud.',
-        memberCount: 850, activityLevel: 'Active', tags: ['Tech', 'Google', 'University'], category: 'Tech', educationLevel: 'Undergraduate', isVerified: true, image: 'G'
+        memberCount: 850, activityLevel: 'Active', tags: ['Tech', 'Google', 'University'], category: 'Tech', educationLevel: 'Undergraduate', isVerified: true, image: 'G', type: 'Public'
     },
     {
         id: 'c3', name: 'Pre-U Math Help', description: 'Solving GCE A-Level Math problems together.',
-        memberCount: 320, activityLevel: 'Active', tags: ['STEM', 'Math', 'High School'], category: 'STEM', educationLevel: 'High School', isVerified: false, image: 'M'
+        memberCount: 320, activityLevel: 'Active', tags: ['STEM', 'Math', 'High School'], category: 'STEM', educationLevel: 'High School', isVerified: false, image: 'M', type: 'Public'
     },
     {
         id: 'c4', name: 'Open Dreams Scholars', description: 'Support for students applying to US/Canada universities.',
-        memberCount: 2100, activityLevel: 'Very Active', tags: ['Scholarship', 'Study Abroad'], category: 'General', educationLevel: 'All', isVerified: true, image: 'OD'
+        memberCount: 2100, activityLevel: 'Very Active', tags: ['Scholarship', 'Study Abroad'], category: 'General', educationLevel: 'All', isVerified: true, image: 'OD', type: 'Private'
     },
     {
         id: 'c5', name: 'Creative Arts Bamenda', description: 'Designers, writers, and artists connecting in the North West.',
-        memberCount: 150, activityLevel: 'Quiet', tags: ['Art', 'Design'], category: 'Art', educationLevel: 'All', isVerified: false, image: 'CA'
+        memberCount: 150, activityLevel: 'Quiet', tags: ['Art', 'Design'], category: 'Art', educationLevel: 'All', isVerified: false, image: 'CA', type: 'Public'
+    },
+    {
+        id: 'c6', name: 'CineCamer Filmmakers', description: 'Collaborate on short films and documentaries.',
+        memberCount: 80, activityLevel: 'Active', tags: ['Film', 'Art', 'Media'], category: 'Art', educationLevel: 'All', isVerified: false, image: 'CC', type: 'Public'
     }
 ];
 
@@ -136,7 +146,7 @@ export const MOCK_USER: UserProfile = {
   opportunitiesApplied: 8,
   opportunitiesSaved: 12,
   achievements: ["Profile Completed", "Hackathon Finalist"],
-  joinedCommunityIds: ['c1'], 
+  joinedCommunityIds: [], 
   stats: MOCK_USER_STATS,
   settings: {
       notifications: true,
@@ -150,119 +160,145 @@ export const MOCK_USER: UserProfile = {
 };
 
 export const MOCK_MENTORS = [
-    {
-    id: 'm1',
-    name: "Dr. Chioma Okeke",
-    username: "@dr_chioma",
-    email: "chioma@example.com",
-    role: 'Mentor',
-    education: "PhD Computer Science",
-    city: "Lagos",
-    country: "Nigeria",
-    age: 35,
-    gender: "Female",
-    interests: ["AI", "Research"],
-    bio: "AI Researcher helping African students get into top global grad schools.",
-    profession: "AI Researcher",
-    currentRole: "Senior Lecturer, UNILAG",
-    yearsExperience: 10,
-    expertise: ["Artificial Intelligence", "Academic Research", "Grant Writing"],
-    availability: "Weekly",
-    services: ["Academic Guidance", "Project Mentorship", "Scholarship Guidance"],
-    rating: 4.9,
-    reviewCount: 45,
-    linkedinLink: "#",
-    achievements: ["Top Mentor 2023"]
-  },
-  {
-    id: 'm2',
-    name: "Sarah Tabe",
-    username: "@sarah_pm",
-    email: "sarah@example.com",
-    role: 'Mentor',
-    education: "MBA",
-    city: "Douala",
-    country: "Cameroon",
-    age: 29,
-    gender: "Female",
-    interests: ["Business", "Fintech"],
-    bio: "Fintech Product Manager at MTN. I help young pros navigate the corporate ladder.",
-    profession: "Product Manager",
-    currentRole: "Product Lead, MTN Cameroon",
-    yearsExperience: 7,
-    expertise: ["Product Management", "Fintech", "Career Strategy"],
-    availability: "Monthly",
-    services: ["CV Review", "Interview Prep", "Career Advice"],
-    rating: 5.0,
-    reviewCount: 28,
-    linkedinLink: "#"
-  },
-  {
-    id: 'm3',
-    name: "Blaise Fomonyuy",
-    username: "@blaise_dev",
-    email: "blaise@example.com",
-    role: 'Mentor',
-    education: "B.Eng Software",
-    city: "Buea",
-    country: "Cameroon",
-    age: 26,
-    gender: "Male",
-    interests: ["Software", "Startups"],
-    bio: "Silicon Mountain Founder. Let's review your code and portfolio.",
-    profession: "Software Engineer",
-    currentRole: "CTO, Skylight Tech",
-    yearsExperience: 5,
-    expertise: ["Software Engineering", "React", "Startup Fundraising"],
-    availability: "Weekly",
-    services: ["Portfolio Review", "Project Mentorship"],
-    rating: 4.8,
-    reviewCount: 32,
-    linkedinLink: "#"
-  }
+    { id: 'm1', name: "Dr. Chioma Okeke", username: "@dr_chioma", email: "chioma@example.com", role: 'Mentor', education: "PhD", city: "Lagos", country: "Nigeria", age: 35, gender: "Female", interests: ["AI"], bio: "AI Researcher.", profession: "AI Researcher", currentRole: "Senior Lecturer", yearsExperience: 10, expertise: ["AI"], availability: "Weekly", services: ["Academic Guidance"], rating: 4.9, reviewCount: 45 },
+    { id: 'm2', name: "Sarah Tabe", username: "@sarah_pm", email: "sarah@example.com", role: 'Mentor', education: "MBA", city: "Douala", country: "Cameroon", age: 29, gender: "Female", interests: ["Fintech"], bio: "Fintech PM.", profession: "Product Manager", currentRole: "Product Lead", yearsExperience: 7, expertise: ["Product"], availability: "Monthly", services: ["CV Review"], rating: 5.0, reviewCount: 28 },
+    { id: 'm3', name: "Blaise Fomonyuy", username: "@blaise_dev", email: "blaise@example.com", role: 'Mentor', education: "B.Eng", city: "Buea", country: "Cameroon", age: 26, gender: "Male", interests: ["Software"], bio: "Software Engineer.", profession: "Software Engineer", currentRole: "CTO", yearsExperience: 5, expertise: ["React"], availability: "Weekly", services: ["Portfolio Review"], rating: 4.8, reviewCount: 32 }
 ] as any;
+
 export const INITIAL_SUCCESS_STORIES = [
-    {
-    id: 's1',
-    authorName: 'Teboh Melvine',
-    title: 'From Buea to Google!',
-    content: 'Thanks to the LaunchPad mentorship program, I polished my CV and landed a remote role. The community support is real!',
-    date: '2024-09-15',
-    status: 'approved'
-  }
+    { id: 's1', authorName: 'Teboh Melvine', title: 'From Buea to Google!', content: 'Mentorship changed my life.', date: '2024-09-15', status: 'approved' }
 ] as any;
+
 export const MOCK_PARTNERS = [
   { id: 'p1', name: 'MTN Cameroon', logo: 'M', description: 'Leading telecommunications provider.', category: 'Corporate', website: '#' },
-  { id: 'p2', name: 'ActivSpaces', logo: 'AS', description: 'Tech hub supporting startups in Buea/Douala.', category: 'Tech', website: '#' },
+  { id: 'p2', name: 'ActivSpaces', logo: 'AS', description: 'Tech hub.', category: 'Tech', website: '#' },
   { id: 'p3', name: 'Silicon Mountain', logo: 'SM', description: 'Community of techies in Fako.', category: 'Tech', website: '#' },
   { id: 'p4', name: 'Orange Digital Center', logo: 'O', description: 'Free digital training.', category: 'Education', website: '#' },
   { id: 'p5', name: 'University of Buea', logo: 'UB', description: 'Student research grants.', category: 'Education', website: '#' },
 ] as any;
+
 export const MOCK_RESOURCES = [
-  { id: 'r1', title: 'Winning Chevening Essays', type: 'Guide', author: 'LaunchPad', category: 'Scholarship', link: '#' },
-  { id: 'r2', title: 'Intro to Tech in Cameroon', type: 'Video', author: 'Silicon Mountain', duration: '1h 30m', category: 'Tech', link: '#' },
+  { id: 'r1', title: 'Winning Essays', type: 'Guide', author: 'LaunchPad', category: 'Scholarship', link: '#' },
+  { id: 'r2', title: 'Intro to Tech', type: 'Video', author: 'Silicon Mountain', duration: '1h 30m', category: 'Tech', link: '#' },
   { id: 'r3', title: 'CV Template', type: 'Guide', author: 'Sarah Tabe', category: 'Career', link: '#' },
 ] as any;
+
+// Updated Opportunities including Artists, Health, etc.
 export const INITIAL_OPPORTUNITIES = [
+  {
+    id: 'deepmind-1',
+    title: 'DeepMind Research Internship',
+    organization: 'Google DeepMind',
+    logo: '',
+    category: 'Internship',
+    regionScope: 'Global',
+    location: 'London / Remote',
+    isOnline: true,
+    deadline: new Date().toISOString().split('T')[0], // Today
+    description: 'Work on cutting-edge AGI research with the world\'s leading AI team. Solving intelligence to advance science.',
+    tags: ['AI', 'Research', 'Python'],
+    postedAt: '1h ago',
+    status: 'approved',
+    authorRole: 'Admin',
+    cost: 'Free',
+    eligibility: 'Open to Undergraduates, Master\'s and PhD students in CS, Math, or Physics.',
+    requirements: ['Python', 'Strong Math Background', 'Research Experience'],
+    benefits: 'Competitive Stipend, Mentorship from top scientists',
+    applicationLink: 'https://deepmind.google/careers/',
+    targetEducationLevels: ['Undergraduate', 'Graduate', 'PhD'],
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=600'
+  },
+  {
+    id: 'art-1',
+    title: 'Pan-African Digital Art Grant',
+    organization: 'AfriArts Foundation',
+    logo: '',
+    category: 'Grant',
+    regionScope: 'Africa',
+    location: 'Remote',
+    isOnline: true,
+    deadline: '2024-12-15',
+    description: 'Funding for digital artists creating works that celebrate African heritage.',
+    tags: ['Arts', 'Graphic Design', 'Funding'],
+    postedAt: '2d ago',
+    status: 'approved',
+    authorRole: 'Admin',
+    cost: 'Free',
+    eligibility: 'African digital artists.',
+    requirements: ['Portfolio', 'Project Proposal'],
+    benefits: '$2000 Grant, Exhibition',
+    applicationLink: '#',
+    targetEducationLevels: ['All'],
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80&w=600'
+  },
+  {
+    id: 'health-1',
+    title: 'Nursing Elective at Douala General',
+    organization: 'Douala General Hospital',
+    logo: '',
+    category: 'Internship',
+    regionScope: 'Cameroon',
+    location: 'Douala',
+    isOnline: false,
+    deadline: '2024-11-30',
+    description: 'Practical clinical experience for nursing students.',
+    tags: ['Health', 'Nursing', 'Medicine'],
+    postedAt: '3d ago',
+    status: 'approved',
+    authorRole: 'Admin',
+    cost: 'Free',
+    eligibility: 'Nursing students (2nd year+).',
+    requirements: ['School Letter', 'Vaccination Record'],
+    benefits: 'Clinical Hours, Mentorship',
+    applicationLink: '#',
+    targetEducationLevels: ['Undergraduate'],
+    mediaType: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=600'
+  },
+  {
+    id: 'film-1',
+    title: 'Short Film Competition: Stories of Change',
+    organization: 'Canal+',
+    logo: '',
+    category: 'Competition',
+    regionScope: 'Africa',
+    location: 'Remote',
+    isOnline: true,
+    deadline: '2025-01-20',
+    description: 'Submit a 5-minute short film about social change in your community.',
+    tags: ['Film', 'Media', 'Arts'],
+    postedAt: '1w ago',
+    status: 'approved',
+    authorRole: 'Admin',
+    cost: 'Free',
+    eligibility: 'Young filmmakers under 30.',
+    requirements: ['Video File (MP4)'],
+    benefits: 'Broadcast on TV, Cash Prize',
+    applicationLink: '#',
+    targetEducationLevels: ['All'],
+    mediaType: 'video',
+    mediaUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+  },
   {
     id: '1',
     title: 'Silicon Mountain Code Fest 2024',
-    organization: 'Silicon Mountain Community',
-    logo: 'SM',
+    organization: 'Silicon Mountain',
     category: 'Hackathon',
     regionScope: 'Specific City',
     location: 'Buea',
     isOnline: false,
     deadline: '2024-11-20',
-    description: 'The biggest onsite coding competition in Buea. Gather your team and build solutions for local problems.',
-    tags: ['Coding', 'Java', 'Community'],
+    description: 'The biggest onsite coding competition in Buea.',
+    tags: ['Coding', 'Java', 'Technology'],
     postedAt: '2h ago',
     status: 'approved',
     authorRole: 'Admin',
     cost: 'Free',
     eligibility: 'Students and Devs in Fako.',
     requirements: ['Laptop', 'Team of 3'],
-    benefits: '1M XAF Prize Pool, Job Offers',
+    benefits: '1M XAF Prize',
     applicationLink: '#',
     targetEducationLevels: ['Undergraduate', 'Self-Taught'],
     mediaType: 'image',
@@ -272,126 +308,25 @@ export const INITIAL_OPPORTUNITIES = [
     id: '2',
     title: 'Orange Cameroon Pulse Internship',
     organization: 'Orange Cameroon',
-    logo: 'O',
     category: 'Internship',
     regionScope: 'Cameroon',
     location: 'Douala',
     isOnline: false,
     deadline: '2024-11-05',
-    description: 'Join the digital team at Orange. Looking for frontend developers and UI/UX designers.',
-    tags: ['Corporate', 'Tech', 'Telecom'],
+    description: 'Looking for frontend developers.',
+    tags: ['Corporate', 'Tech', 'Technology'],
     postedAt: '5h ago',
     status: 'approved',
     authorRole: 'Admin',
     cost: 'Free',
-    eligibility: 'Final year students (Licence/Master).',
-    requirements: ['CV', 'Portfolio', 'School Letter'],
-    benefits: 'Monthly Allowance (80k XAF), Experience',
+    eligibility: 'Final year students.',
+    requirements: ['CV', 'Portfolio'],
+    benefits: 'Monthly Allowance',
     applicationLink: '#',
     targetEducationLevels: ['Undergraduate', 'Graduate'],
     mediaType: 'video',
     mediaUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4'
-  },
-  {
-    id: '3',
-    title: 'Presidential Excellence Grant',
-    organization: 'MinESUP',
-    logo: 'M',
-    category: 'Grant',
-    regionScope: 'Cameroon',
-    location: 'Yaoundé',
-    isOnline: false,
-    deadline: '2024-12-31',
-    description: 'Academic excellence grant for top performing university students in state universities.',
-    tags: ['Government', 'Education'],
-    postedAt: '1d ago',
-    status: 'approved',
-    authorRole: 'Admin',
-    cost: 'Free',
-    eligibility: 'GPA > 3.5/4.0.',
-    requirements: ['Transcripts', 'ID'],
-    benefits: '50,000 XAF Grant',
-    applicationLink: '#',
-    targetEducationLevels: ['Undergraduate', 'Graduate']
-  },
-  {
-    id: '4',
-    title: 'Mastercard Foundation Scholars Program',
-    organization: 'Mastercard Foundation',
-    logo: 'MF',
-    category: 'Scholarship',
-    regionScope: 'Africa',
-    location: 'Cape Town',
-    isOnline: false,
-    deadline: '2025-01-15',
-    description: 'Full scholarship for African students to study at UCT South Africa.',
-    tags: ['Study Abroad', 'Full Ride'],
-    postedAt: '3d ago',
-    status: 'approved',
-    authorRole: 'Admin',
-    cost: 'Free',
-    eligibility: 'Academically talented African youth.',
-    requirements: ['Essays', 'References', 'Transcripts'],
-    benefits: 'Full Tuition, Accommodation, Stipend, Flight',
-    applicationLink: '#',
-    targetEducationLevels: ['Graduate', 'Undergraduate'],
-    mediaType: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600'
-  },
-  {
-    id: '5',
-    title: 'Bamenda Innovation Week Volunteer',
-    organization: 'Bamenda Tech Hub',
-    logo: 'BT',
-    category: 'Volunteering',
-    regionScope: 'Specific City',
-    location: 'Bamenda',
-    isOnline: false,
-    deadline: '2024-10-30',
-    description: 'Help organize the biggest tech event in the North West region.',
-    tags: ['Event', 'Community'],
-    postedAt: '6h ago',
-    status: 'approved',
-    authorRole: 'Admin',
-    cost: 'Free',
-    eligibility: 'Residents of Bamenda.',
-    requirements: ['Availability'],
-    benefits: 'Certificate, T-Shirt, Networking',
-    applicationLink: '#',
-    targetEducationLevels: ['High School', 'Undergraduate']
-  },
-  {
-    id: '6',
-    title: 'Remote Technical Writer',
-    organization: 'AfriTech Blog',
-    logo: 'AT',
-    category: 'Job',
-    regionScope: 'Africa',
-    location: 'Remote',
-    isOnline: true,
-    deadline: 'Rolling',
-    description: 'Write tutorials about using mobile money APIs in Africa.',
-    tags: ['Writing', 'Fintech'],
-    postedAt: '1w ago',
-    status: 'approved',
-    authorRole: 'Admin',
-    cost: 'Free',
-    eligibility: 'Strong English writing skills.',
-    requirements: ['Writing Samples'],
-    benefits: '$50 per article',
-    applicationLink: '#',
-    targetEducationLevels: ['All']
   }
 ] as any;
-export const CATEGORIES = [
-  'All',
-  'Scholarship',
-  'Internship',
-  'Hackathon',
-  'Grant',
-  'Volunteering',
-  'Fellowship',
-  'Competition',
-  'Job',
-  'Event'
-];
+
+export const CATEGORIES = ['All', 'Scholarship', 'Internship', 'Hackathon', 'Grant', 'Volunteering', 'Fellowship', 'Competition', 'Job', 'Event'];
